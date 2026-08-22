@@ -66,7 +66,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 export { app };
 export default app;
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(`🚀 Hexafalls Supabase Node.js Backend is live on port ${PORT}`);
