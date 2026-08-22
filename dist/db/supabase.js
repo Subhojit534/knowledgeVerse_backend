@@ -522,20 +522,44 @@ export async function getAllProfiles() {
 // ============================================================================
 // LEARNING & PROGRESSION DB OPERATIONS
 // ============================================================================
-export async function updateProgressAndStats(userId = 'demo-user-123', buildingId, subject, correctCount, totalQuestions) {
-    const validId = ensureUuid(userId);
-    const currentProfile = await getProfile(validId);
-    const xpEarned = correctCount * 25 + 10;
-    const coinsEarned = correctCount * 15;
+export function computeLevel(totalXp) {
+    if (totalXp < 0)
+        return 1;
+    let currentLvl = 1;
+    let remainingXp = totalXp;
+    while (true) {
+        const needed = currentLvl <= 1 ? 1000 : 1000 + (currentLvl * 1000);
+        if (remainingXp >= needed) {
+            remainingXp -= needed;
+            currentLvl++;
+        }
+        else {
+            break;
+        }
+    }
+    return currentLvl;
+}
+export async function updateProgressAndStats(userId, buildingId, subject, correctCount, totalQuestions) {
+    const currentProfile = await getProfile(userId);
+    const validId = currentProfile.id || ensureUuid(userId);
+    const xpEarned = correctCount * 50;
+    const coinsEarned = correctCount * 50;
+    const isPerfect = correctCount === totalQuestions && totalQuestions > 0;
+    const gemsEarned = isPerfect ? 5 : 0;
+    const wrongCount = Math.max(0, totalQuestions - correctCount);
     const newXp = (currentProfile.xp || 0) + xpEarned;
-    const newLevel = Math.floor(newXp / 100) + 1;
+    const newLevel = computeLevel(newXp);
     const newCoins = (currentProfile.coins || 0) + coinsEarned;
+    const newGems = (currentProfile.gems || 0) + gemsEarned;
+    const newEnergy = Math.max(0, (currentProfile.energy || 100) - wrongCount);
     const updatedProfile = {
         ...currentProfile,
         id: validId,
         xp: newXp,
         level: newLevel,
         coins: newCoins,
+        gems: newGems,
+        energy: newEnergy,
     };
     await saveProfile(updatedProfile);
     const progressKey = `${validId}_${buildingId}`;

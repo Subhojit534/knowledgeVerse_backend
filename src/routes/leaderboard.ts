@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getAllProfiles, getPublicGuilds } from '../db/supabase.js';
+import { getAllProfiles, getPublicGuilds, computeLevel } from '../db/supabase.js';
 
 export const leaderboardRouter = Router();
 
@@ -56,7 +56,7 @@ async function buildLeaderboard(category: string = 'GLOBAL') {
       const baseSubjectXp = studiesSubject
         ? Math.round((p.xp || 150) * 1.0)
         : Math.round((p.xp || 150) * 0.45);
-      const subjectLevel = Math.max(1, Math.floor(baseSubjectXp / 100) + 1);
+      const subjectLevel = computeLevel(baseSubjectXp);
       const masteryPct = studiesSubject
         ? Math.min(99, 65 + subjectLevel * 4)
         : Math.min(50, 20 + subjectLevel * 2);
