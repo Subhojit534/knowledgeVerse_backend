@@ -90,7 +90,7 @@ profileRouter.get('/me', async (req: Request, res: Response) => {
   }
 });
 
-// Update Current Profile Customizations
+// Update Current Profile Customizations & Stats
 profileRouter.put('/me', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || (req.body?.id as string) || 'demo-user-123';
@@ -106,11 +106,18 @@ profileRouter.put('/me', async (req: Request, res: Response) => {
       grade: updates.grade || existing.grade,
       curriculum: updates.curriculum || existing.curriculum,
       difficulty: updates.difficulty || existing.difficulty,
+      xp: updates.xp !== undefined ? Number(updates.xp) : existing.xp,
+      level: updates.level !== undefined ? Number(updates.level) : existing.level,
+      coins: updates.coins !== undefined ? Number(updates.coins) : existing.coins,
+      gems: updates.gems !== undefined ? Number(updates.gems) : existing.gems,
+      energy: updates.energy !== undefined ? Number(updates.energy) : existing.energy,
+      streak_days: updates.streak_days !== undefined ? Number(updates.streak_days) : (updates.streakDays !== undefined ? Number(updates.streakDays) : existing.streak_days),
+      subjects: Array.isArray(updates.subjects) && updates.subjects.length > 0 ? updates.subjects : existing.subjects,
     });
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: 'Profile updated and saved to DB successfully',
       profile: updated,
     });
   } catch (err) {
