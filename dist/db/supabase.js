@@ -751,29 +751,70 @@ export function getShopCatalog(category) {
 export async function getPublicGuilds() {
     if (supabaseClient) {
         try {
-            const { data, error } = await supabaseClient.from('guilds').select('*').order('level', { ascending: false });
+            const { data, error } = await supabaseClient
+                .from('guilds')
+                .select('*')
+                .order('level', { ascending: false });
             if (!error && data && data.length > 0) {
+                for (const g of data) {
+                    memoryGuilds.set(g.id, g);
+                }
                 return data;
             }
         }
-        catch (_) { }
+        catch (err) {
+            console.error('❌ [Supabase getPublicGuilds Error]:', err);
+        }
     }
     return Array.from(memoryGuilds.values());
 }
 export async function getUserGuild(userId) {
-    const validId = ensureUuid(userId);
+    const profile = await getProfile(userId);
+    const candidateIds = Array.from(new Set([profile.id, ensureUuid(userId), userId].filter(Boolean)));
     let userGuild = null;
     let guildId = null;
-    // 1. Check Supabase
+    // 1. Check Supabase Cloud
     if (supabaseClient) {
         try {
-            const { data: memberData } = await supabaseClient
-                .from('guild_members')
-                .select('guild_id')
-                .eq('user_id', validId)
-                .maybeSingle();
-            if (memberData && memberData.guild_id) {
-                guildId = memberData.guild_id;
+            // Find guild membership
+            for (const uId of candidateIds) {
+                const { data: memberRows } = await supabaseClient
+                    .from('guild_members')
+                    .select('guild_id')
+                    .eq('user_id', uId)
+                    .order('joined_at', { ascending: false })
+                    .limit(1);
+                if (memberRows && memberRows.length > 0 && memberRows[0].guild_id) {
+                    guildId = memberRows[0].guild_id;
+                    break;
+                }
+            }
+            // Fallback: Check if user is the leader of a guild directly in `guilds` table
+            if (!guildId) {
+                for (const uId of candidateIds) {
+                    const { data: leaderGuilds } = await supabaseClient
+                        .from('guilds')
+                        .select('id')
+                        .eq('leader_id', uId)
+                        .limit(1);
+                    if (leaderGuilds && leaderGuilds.length > 0 && leaderGuilds[0].id) {
+                        guildId = leaderGuilds[0].id;
+                        // Auto-repair membership record in Supabase
+                        try {
+                            await supabaseClient.from('guild_members').upsert({
+                                guild_id: guildId,
+                                user_id: uId,
+                                role: 'Leader',
+                                weekly_xp: 0,
+                                joined_at: new Date().toISOString(),
+                            }, { onConflict: 'guild_id,user_id' });
+                        }
+                        catch (_) { }
+                        break;
+                    }
+                }
+            }
+            if (guildId) {
                 const { data: gData } = await supabaseClient
                     .from('guilds')
                     .select('*')
@@ -781,18 +822,31 @@ export async function getUserGuild(userId) {
                     .maybeSingle();
                 if (gData) {
                     userGuild = gData;
+                    memoryGuilds.set(guildId, userGuild);
+                    // Fetch members with profiles joined
                     const { data: mList } = await supabaseClient
                         .from('guild_members')
-                        .select('*')
+                        .select('id, guild_id, user_id, role, weekly_xp, joined_at, profiles:user_id(id, name, level)')
                         .eq('guild_id', guildId);
                     const { data: msgList } = await supabaseClient
                         .from('guild_messages')
                         .select('*')
                         .eq('guild_id', guildId)
                         .order('created_at', { ascending: true });
+                    const formattedMembers = (mList || []).map((m) => ({
+                        id: m.id || m.user_id,
+                        guild_id: m.guild_id,
+                        user_id: m.user_id,
+                        name: m.profiles?.name || m.name || 'Scholar',
+                        role: m.role || 'Member',
+                        level: m.profiles?.level || m.level || 1,
+                        weekly_xp: m.weekly_xp || 0,
+                        is_online: true,
+                        joined_at: m.joined_at,
+                    }));
                     return {
                         guild: userGuild,
-                        members: mList || [],
+                        members: formattedMembers,
                         messages: msgList || [],
                     };
                 }
@@ -803,12 +857,18 @@ export async function getUserGuild(userId) {
         }
     }
     // 2. Check in-memory store
-    for (const [gId, members] of memoryGuildMembers.entries()) {
-        if (members.some((m) => m.user_id === validId)) {
-            guildId = gId;
-            userGuild = memoryGuilds.get(gId) || null;
-            break;
+    for (const uId of candidateIds) {
+        for (const [gId, members] of memoryGuildMembers.entries()) {
+            if (members.some((m) => m.user_id === uId ||
+                (profile.name &&
+                    m.name.toLowerCase() === profile.name.toLowerCase()))) {
+                guildId = gId;
+                userGuild = memoryGuilds.get(gId) || null;
+                break;
+            }
         }
+        if (userGuild)
+            break;
     }
     if (!userGuild || !guildId) {
         return { guild: null, members: [], messages: [] };
@@ -818,8 +878,8 @@ export async function getUserGuild(userId) {
     return { guild: userGuild, members, messages };
 }
 export async function createGuild(leaderId, name, tag, motto) {
-    const validLeaderId = ensureUuid(leaderId);
-    const profile = await getProfile(validLeaderId);
+    const profile = await getProfile(leaderId);
+    const validLeaderId = profile.id || ensureUuid(leaderId);
     const newGuildId = crypto.randomUUID();
     const newGuild = {
         id: newGuildId,
@@ -847,8 +907,25 @@ export async function createGuild(leaderId, name, tag, motto) {
     memoryGuildMessages.set(newGuildId, []);
     if (supabaseClient) {
         try {
-            await supabaseClient.from('guilds').insert(newGuild);
-            await supabaseClient.from('guild_members').insert(initialMember);
+            await supabaseClient.from('guilds').insert({
+                id: newGuild.id,
+                name: newGuild.name,
+                tag: newGuild.tag,
+                motto: newGuild.motto,
+                level: newGuild.level,
+                member_count: 1,
+                max_members: newGuild.max_members,
+                leader_id: validLeaderId,
+                created_at: newGuild.created_at,
+            });
+            // Insert clean schema columns to avoid Postgres column error
+            await supabaseClient.from('guild_members').upsert({
+                guild_id: newGuildId,
+                user_id: validLeaderId,
+                role: 'Leader',
+                weekly_xp: 0,
+                joined_at: initialMember.joined_at,
+            }, { onConflict: 'guild_id,user_id' });
             console.log(`✅ [Supabase Cloud]: Successfully created Guild "${newGuild.name}" (${newGuildId})`);
         }
         catch (err) {
@@ -858,31 +935,71 @@ export async function createGuild(leaderId, name, tag, motto) {
     return newGuild;
 }
 export async function joinGuild(userId, guildId) {
-    const validUserId = ensureUuid(userId);
-    const profile = await getProfile(validUserId);
-    const guild = memoryGuilds.get(guildId);
+    const profile = await getProfile(userId);
+    const validUserId = profile.id || ensureUuid(userId);
+    // Fetch or find the guild
+    let guild = memoryGuilds.get(guildId);
+    if (!guild && supabaseClient) {
+        try {
+            const { data: gData } = await supabaseClient
+                .from('guilds')
+                .select('*')
+                .eq('id', guildId)
+                .maybeSingle();
+            if (gData) {
+                guild = gData;
+                memoryGuilds.set(guildId, guild);
+            }
+        }
+        catch (err) {
+            console.error('❌ [Supabase Fetch Guild Error]:', err);
+        }
+    }
     if (!guild)
         return false;
     const currentMembers = memoryGuildMembers.get(guildId) || [];
-    if (currentMembers.some((m) => m.user_id === validUserId))
-        return true;
-    const newMember = {
-        guild_id: guildId,
-        user_id: validUserId,
-        name: profile.name,
-        role: 'Member',
-        level: profile.level || 1,
-        weekly_xp: 0,
-        is_online: true,
-        joined_at: new Date().toISOString(),
-    };
-    currentMembers.push(newMember);
-    memoryGuildMembers.set(guildId, currentMembers);
-    guild.member_count = currentMembers.length;
+    if (!currentMembers.some((m) => m.user_id === validUserId)) {
+        const newMember = {
+            guild_id: guildId,
+            user_id: validUserId,
+            name: profile.name,
+            role: 'Member',
+            level: profile.level || 1,
+            weekly_xp: 0,
+            is_online: true,
+            joined_at: new Date().toISOString(),
+        };
+        currentMembers.push(newMember);
+        memoryGuildMembers.set(guildId, currentMembers);
+        guild.member_count = currentMembers.length;
+    }
     if (supabaseClient) {
         try {
-            await supabaseClient.from('guild_members').insert(newMember);
-            await supabaseClient.from('guilds').update({ member_count: guild.member_count }).eq('id', guildId);
+            // Remove user from previous guilds
+            await supabaseClient
+                .from('guild_members')
+                .delete()
+                .eq('user_id', validUserId);
+            // Insert clean row into guild_members
+            await supabaseClient.from('guild_members').upsert({
+                guild_id: guildId,
+                user_id: validUserId,
+                role: 'Member',
+                weekly_xp: 0,
+                joined_at: new Date().toISOString(),
+            }, { onConflict: 'guild_id,user_id' });
+            // Update actual member count in guilds table
+            const { count } = await supabaseClient
+                .from('guild_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('guild_id', guildId);
+            if (count !== null) {
+                guild.member_count = count;
+                await supabaseClient
+                    .from('guilds')
+                    .update({ member_count: count })
+                    .eq('id', guildId);
+            }
         }
         catch (err) {
             console.error('❌ [Supabase DB Error]: Join guild failed:', err);
@@ -891,7 +1008,8 @@ export async function joinGuild(userId, guildId) {
     return true;
 }
 export async function leaveGuild(userId, guildId) {
-    const validUserId = ensureUuid(userId);
+    const profile = await getProfile(userId);
+    const validUserId = profile.id || ensureUuid(userId);
     const currentMembers = memoryGuildMembers.get(guildId) || [];
     const updatedMembers = currentMembers.filter((m) => m.user_id !== validUserId);
     memoryGuildMembers.set(guildId, updatedMembers);
@@ -901,9 +1019,22 @@ export async function leaveGuild(userId, guildId) {
     }
     if (supabaseClient) {
         try {
-            await supabaseClient.from('guild_members').delete().eq('guild_id', guildId).eq('user_id', validUserId);
-            if (guild) {
-                await supabaseClient.from('guilds').update({ member_count: guild.member_count }).eq('id', guildId);
+            await supabaseClient
+                .from('guild_members')
+                .delete()
+                .eq('guild_id', guildId)
+                .eq('user_id', validUserId);
+            const { count } = await supabaseClient
+                .from('guild_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('guild_id', guildId);
+            if (count !== null) {
+                if (guild)
+                    guild.member_count = count;
+                await supabaseClient
+                    .from('guilds')
+                    .update({ member_count: count })
+                    .eq('id', guildId);
             }
         }
         catch (err) {
@@ -913,8 +1044,8 @@ export async function leaveGuild(userId, guildId) {
     return true;
 }
 export async function sendGuildMessage(guildId, senderId, text) {
-    const validSenderId = ensureUuid(senderId);
-    const profile = await getProfile(validSenderId);
+    const profile = await getProfile(senderId);
+    const validSenderId = profile.id || ensureUuid(senderId);
     const message = {
         id: crypto.randomUUID(),
         guild_id: guildId,
@@ -929,7 +1060,15 @@ export async function sendGuildMessage(guildId, senderId, text) {
     memoryGuildMessages.set(guildId, messages);
     if (supabaseClient) {
         try {
-            await supabaseClient.from('guild_messages').insert(message);
+            await supabaseClient.from('guild_messages').insert({
+                id: message.id,
+                guild_id: message.guild_id,
+                sender_id: validSenderId,
+                sender_name: message.sender_name,
+                role: message.role,
+                text: message.text,
+                created_at: message.created_at,
+            });
         }
         catch (err) {
             console.error('❌ [Supabase DB Error]: Send guild message failed:', err);
