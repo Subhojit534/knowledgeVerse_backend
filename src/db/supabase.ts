@@ -602,7 +602,7 @@ export async function updateProgressAndStats(
   const validId = currentProfile.id || ensureUuid(userId);
 
   const xpEarned = correctCount * 50;
-  const coinsEarned = correctCount * 50;
+  const coinsEarned = correctCount * 10;
   const isPerfect = correctCount === totalQuestions && totalQuestions > 0;
   const gemsEarned = isPerfect ? 5 : 0;
   const wrongCount = Math.max(0, totalQuestions - correctCount);
