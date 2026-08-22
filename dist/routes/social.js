@@ -1,6 +1,33 @@
 import { Router } from 'express';
-import { sendFriendRequest, respondFriendRequest, createDuelChallenge, getFriendsData, } from '../db/supabase.js';
+import { sendFriendRequest, respondFriendRequest, createDuelChallenge, getFriendsData, getUserGuild, getPublicGuilds, } from '../db/supabase.js';
 export const socialRouter = Router();
+// Fast Unified Social Dashboard (Single-hop parallel load < 0.3s)
+socialRouter.get('/dashboard', async (req, res) => {
+    try {
+        const userId = req.query.userId || 'demo-user-123';
+        // Execute all database queries in parallel on server
+        const [friendsData, myGuildData, publicGuilds] = await Promise.all([
+            getFriendsData(userId),
+            getUserGuild(userId),
+            getPublicGuilds(),
+        ]);
+        res.json({
+            success: true,
+            friends: friendsData.friends,
+            pendingReceived: friendsData.pendingReceived,
+            pendingSent: friendsData.pendingSent,
+            availableExplorers: friendsData.availableExplorers,
+            myGuild: myGuildData.guild,
+            guildMembers: myGuildData.members,
+            guildMessages: myGuildData.messages,
+            publicGuilds: publicGuilds,
+        });
+    }
+    catch (err) {
+        console.error('❌ [Social Dashboard Error]:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch social dashboard' });
+    }
+});
 // Get Friends, Pending Requests & Explorers List
 socialRouter.get('/friends', async (req, res) => {
     try {

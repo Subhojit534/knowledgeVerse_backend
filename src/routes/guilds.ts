@@ -6,6 +6,7 @@ import {
   joinGuild,
   leaveGuild,
   sendGuildMessage,
+  getGuildMessages,
 } from '../db/supabase.js';
 
 export const guildsRouter = Router();
@@ -21,6 +22,24 @@ guildsRouter.get('/', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('❌ [Guilds Directory Error]:', err);
     res.status(500).json({ success: false, error: 'Failed to fetch guilds list' });
+  }
+});
+
+// Get Guild Messages for Live Polling
+guildsRouter.get('/messages', async (req: Request, res: Response) => {
+  try {
+    const guildId = req.query.guildId as string;
+    if (!guildId) {
+      return res.status(400).json({ success: false, error: 'guildId is required' });
+    }
+    const messages = await getGuildMessages(guildId);
+    res.json({
+      success: true,
+      messages,
+    });
+  } catch (err) {
+    console.error('❌ [Guild Messages Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch guild messages' });
   }
 });
 
