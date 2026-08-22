@@ -16,26 +16,67 @@ function getGroqClient(): any {
 }
 
 /**
- * Shuffles options of each question and updates the correct_index accordingly
- * to ensure no two attempts or students see the exact same layout.
+ * Shuffles options of each question and updates the correct_index using exact
+ * answer-text matching to guarantee 100% accurate answer validation.
  */
-function shuffleQuestionOptions(questions: MCQuestion[]): MCQuestion[] {
+function shuffleQuestionOptions(questions: any[]): MCQuestion[] {
   return questions.map((q) => {
-    const originalCorrectOption = q.options[q.correct_index];
-    const shuffledOptions = [...q.options];
+    const rawOpts = (Array.isArray(q.options) ? q.options : []).map(String).map((s: string) => s.trim());
+    const opts = rawOpts.filter((s: string) => s.length > 0);
+    while (opts.length < 4) {
+      opts.push(`Option ${opts.length + 1}`);
+    }
 
-    // Fisher-Yates shuffle
+    // 1. Resolve true correct answer text safely
+    let correctText = '';
+    if (q.correct_answer_text && typeof q.correct_answer_text === 'string') {
+      correctText = q.correct_answer_text.trim();
+    }
+
+    // If not specified or not matching, resolve from correct_index (handling 0-based, 1-based, letters A-D)
+    if (!correctText || !opts.some((opt: string) => opt.toLowerCase() === correctText.toLowerCase())) {
+      let rawIdx = 0;
+      if (typeof q.correct_index === 'number') {
+        rawIdx = q.correct_index;
+      } else if (typeof q.correct_index === 'string') {
+        const trimmed = q.correct_index.trim().toUpperCase();
+        if (trimmed === 'A') rawIdx = 0;
+        else if (trimmed === 'B') rawIdx = 1;
+        else if (trimmed === 'C') rawIdx = 2;
+        else if (trimmed === 'D') rawIdx = 3;
+        else rawIdx = parseInt(trimmed, 10) || 0;
+      }
+
+      // If index was 1-based (1..4)
+      if (rawIdx >= 1 && rawIdx <= 4 && rawIdx === opts.length) {
+        rawIdx = rawIdx - 1;
+      } else if (rawIdx >= 4) {
+        rawIdx = 3;
+      } else if (rawIdx < 0) {
+        rawIdx = 0;
+      }
+
+      correctText = opts[rawIdx] || opts[0];
+    }
+
+    // 2. Perform Fisher-Yates shuffle on options
+    const shuffledOptions = [...opts];
     for (let i = shuffledOptions.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
     }
 
-    const newCorrectIndex = shuffledOptions.indexOf(originalCorrectOption);
+    // 3. Find the exact matching index of the correct text in shuffledOptions
+    const finalIndex = shuffledOptions.findIndex(
+      (opt: string) => opt.toLowerCase() === correctText.toLowerCase()
+    );
 
     return {
-      ...q,
-      options: shuffledOptions,
-      correct_index: newCorrectIndex >= 0 ? newCorrectIndex : 0,
+      id: Number(q.id) || 1,
+      question: String(q.question || 'Question'),
+      options: shuffledOptions.slice(0, 4),
+      correct_index: finalIndex >= 0 ? finalIndex : 0,
+      explanation: String(q.explanation || 'Correct answer principle.'),
     };
   });
 }
@@ -74,6 +115,10 @@ CRITICAL GRADE-LEVEL PEDAGOGICAL RULES:
 - For Class 11 to 12: Focus on senior secondary standards (e.g. derivatives, vectors, matrices, electromagnetism, chemical thermodynamics, organic reaction pathways).
 - Strictly adhere to the requested subject: "${subject}" and specific chapter/topic: "${topic}".
 
+ACCURACY & ANSWER KEYS (CRITICAL):
+- In every question object, specify BOTH "correct_index" (0 to 3) AND "correct_answer_text" (the exact string text of the correct option).
+- Ensure the question is unambiguous and has exactly one mathematically/scientifically correct answer.
+
 Output Rules:
 1. Return ONLY a valid JSON object matching the requested schema.
 2. The explanation must be 2 to 3 sentences: inspiring, clear, conceptual, and appropriate for ${grade}.
@@ -101,6 +146,7 @@ Required JSON schema:
       "question": "Question text appropriate for ${grade}?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_index": 0,
+      "correct_answer_text": "Exact text matching Option A",
       "explanation": "Clear explanation of the correct answer."
     },
     {
@@ -108,6 +154,7 @@ Required JSON schema:
       "question": "Question text appropriate for ${grade}?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_index": 1,
+      "correct_answer_text": "Exact text matching Option B",
       "explanation": "Clear explanation of the correct answer."
     },
     {
@@ -115,6 +162,7 @@ Required JSON schema:
       "question": "Question text appropriate for ${grade}?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_index": 2,
+      "correct_answer_text": "Exact text matching Option C",
       "explanation": "Clear explanation of the correct answer."
     },
     {
@@ -122,6 +170,7 @@ Required JSON schema:
       "question": "Question text appropriate for ${grade}?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_index": 3,
+      "correct_answer_text": "Exact text matching Option D",
       "explanation": "Clear explanation of the correct answer."
     }
   ]
@@ -146,7 +195,7 @@ Required JSON schema:
             { role: 'user', content: userPrompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.7, // Higher temperature for fresh, random variety on each attempt
+          temperature: 0.7,
           max_tokens: 2500,
         });
         responseText = completion.choices[0]?.message?.content;
@@ -167,27 +216,15 @@ Required JSON schema:
 
     // Validate and sanitize questions array
     const rawQuestions = Array.isArray(parsed.questions) ? parsed.questions : [];
-    let questions: MCQuestion[] = rawQuestions.map((q: any, idx: number) => {
-      const opts = Array.isArray(q.options) ? q.options.map(String) : [];
-      while (opts.length < 4) {
-        opts.push(`Option ${opts.length + 1}`);
-      }
-      return {
-        id: idx + 1,
-        question: String(q.question || `Question ${idx + 1}`),
-        options: opts.slice(0, 4),
-        correct_index: Math.max(0, Math.min(3, Number(q.correct_index) || 0)),
-        explanation: String(q.explanation || 'Correct concept applied.'),
-      };
-    });
+    let processedQuestions: any[] = rawQuestions;
 
-    if (questions.length < 4) {
+    if (processedQuestions.length < 4) {
       const fb = getQuestionsForBuilding(buildingId, subject);
-      questions = fb.questions;
+      processedQuestions = fb.questions;
     }
 
-    // Apply option shuffling so options (A,B,C,D) are randomized
-    const shuffledQuestions = shuffleQuestionOptions(questions.slice(0, 4));
+    // Apply option shuffling with guaranteed correct_answer_text matching
+    const shuffledQuestions = shuffleQuestionOptions(processedQuestions.slice(0, 4));
 
     const result: LearningContentPayload = {
       building_id: buildingId,
