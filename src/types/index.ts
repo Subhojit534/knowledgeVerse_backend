@@ -49,6 +49,8 @@ export interface LearningRequest {
   difficulty?: string;
   student_level?: number;
   topic?: string;
+  grade?: string;
+  curriculum?: string;
 }
 
 export interface QuizSubmissionRequest {

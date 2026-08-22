@@ -1,24 +1,28 @@
 import { Router, Request, Response } from 'express';
-import { getQuestionsForBuilding } from '../data/questionsData.js';
+import { generateLearningContentWithGroq } from '../services/groq.js';
 import { updateProgressAndStats } from '../db/supabase.js';
 
 export const learningRouter = Router();
 
-// Fetch Learning Content & Questions for a Building/Subject
+// Fetch Learning Content & Questions for a Building/Subject using Groq AI
 learningRouter.post('/content', async (req: Request, res: Response) => {
   try {
-    const { building_id, building_name, subject } = req.body || {};
+    const { building_id, building_name, subject, student_level, topic, difficulty, grade, curriculum } = req.body || {};
     const bId = building_id || 'code';
     const subName = subject || 'Computer Science';
 
-    const content = getQuestionsForBuilding(bId, subName);
-
-    res.json({
-      ...content,
+    const content = await generateLearningContentWithGroq({
       building_id: bId,
-      building_name: building_name || content.building_name,
+      building_name: building_name || 'Learning Tower',
       subject: subName,
+      student_level: Number(student_level) || 1,
+      topic: topic,
+      difficulty: difficulty || 'Intermediate',
+      grade: grade || 'Class 10',
+      curriculum: curriculum || 'CBSE',
     });
+
+    res.json(content);
   } catch (err) {
     console.error('❌ [Learning Route Error]:', err);
     res.status(500).json({ success: false, error: 'Failed to retrieve learning content' });
