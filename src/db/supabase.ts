@@ -58,74 +58,8 @@ const memoryGuildMessages: Map<string, GuildMessageData[]> = new Map();
 const memoryFriendships: Map<string, FriendshipData> = new Map();
 const memoryDuels: Map<string, DuelChallengeData> = new Map();
 
-// Seed initial default profiles
+// In-memory profiles (populated dynamically from user logins / DB)
 const demo1Uuid = ensureUuid('demo-user-123');
-const demo2Uuid = ensureUuid('demo-user-456');
-const demo3Uuid = ensureUuid('demo-user-789');
-
-const demoProfile1: PlayerProfileData = {
-  id: demo1Uuid,
-  name: 'Archmage Student',
-  password: 'password123',
-  grade: 'Class 10',
-  curriculum: 'CBSE',
-  subjects: ['Computer Science', 'Mathematics', 'Physics', 'History'],
-  difficulty: 'Balanced',
-  world_theme: 'Green Highlands',
-  learning_goal: 'Master all academic domains',
-  avatar_index: 0,
-  xp: 1450,
-  level: 4,
-  coins: 1240,
-  gems: 24,
-  energy: 100,
-  streak_days: 42,
-  last_active: new Date().toISOString(),
-};
-
-const demoProfile2: PlayerProfileData = {
-  id: demo2Uuid,
-  name: 'Elena Vance',
-  password: 'password123',
-  grade: 'Class 12',
-  curriculum: 'ICSE',
-  subjects: ['Mathematics', 'Physics'],
-  difficulty: 'Challenging',
-  world_theme: 'Mystic Spire',
-  learning_goal: 'Quantum Physics & Geometry',
-  avatar_index: 1,
-  xp: 42150,
-  level: 22,
-  coins: 4800,
-  gems: 120,
-  energy: 100,
-  streak_days: 38,
-  last_active: new Date().toISOString(),
-};
-
-const demoProfile3: PlayerProfileData = {
-  id: demo3Uuid,
-  name: 'Victoria Prime',
-  password: 'password123',
-  grade: 'Class 11',
-  curriculum: 'CBSE',
-  subjects: ['Mathematics', 'Computer Science'],
-  difficulty: 'Challenging',
-  world_theme: 'Arcane Citadel',
-  learning_goal: 'Grand Archon Mastery',
-  avatar_index: 2,
-  xp: 48920,
-  level: 25,
-  coins: 8900,
-  gems: 250,
-  energy: 100,
-  streak_days: 45,
-  last_active: new Date().toISOString(),
-};
-
-memoryProfiles.set(demo1Uuid, demoProfile1);
-memoryProfiles.set(demo2Uuid, demoProfile2);
-memoryProfiles.set(demo3Uuid, demoProfile3);
 
 // Seed initial Shop Catalog
 const initialShopItems: ShopCatalogItem[] = [
@@ -329,7 +263,7 @@ const guild1: GuildData = {
   member_count: 14,
   max_members: 20,
   level: 5,
-  leader_id: demo2Uuid,
+  leader_id: ensureUuid('guild-leader-arc'),
 };
 
 const guild2: GuildData = {
@@ -360,7 +294,7 @@ memoryGuildMessages.set(g1Uuid, [
   {
     id: crypto.randomUUID(),
     guild_id: g1Uuid,
-    sender_id: demo2Uuid,
+    sender_id: ensureUuid('guild-leader-arc'),
     sender_name: 'Elena Vance',
     role: 'Leader',
     text: 'Welcome all new scholars to the Order of Arcanists! Prepare for the weekly quiz raid.',
@@ -369,7 +303,7 @@ memoryGuildMessages.set(g1Uuid, [
   {
     id: crypto.randomUUID(),
     guild_id: g1Uuid,
-    sender_id: demo3Uuid,
+    sender_id: ensureUuid('guild-member-vic'),
     sender_name: 'Victoria Prime',
     role: 'Officer',
     text: 'History and Math towers are ready for study sessions today!',
@@ -593,13 +527,29 @@ export async function getProfile(userId?: string): Promise<PlayerProfileData> {
   }
 
   // 3. If no userId provided, or not found, check if there is any user-created profile
+  // 3. If no userId provided, return the first available profile
   for (const p of Array.from(memoryProfiles.values()).reverse()) {
-    if (p.id !== demo1Uuid && p.id !== demo2Uuid && p.id !== demo3Uuid) {
-      return p;
-    }
+    return p;
   }
 
-  return memoryProfiles.get(demo1Uuid) || demoProfile1;
+  return {
+    id: ensureUuid('default-user'),
+    name: 'Explorer',
+    grade: 'Class 10',
+    curriculum: 'CBSE',
+    subjects: ['Mathematics', 'Computer Science'],
+    difficulty: 'Balanced',
+    world_theme: 'Green Highlands',
+    learning_goal: 'Master all academic domains',
+    avatar_index: 0,
+    xp: 0,
+    level: 1,
+    coins: 500,
+    gems: 25,
+    energy: 100,
+    streak_days: 1,
+    last_active: new Date().toISOString(),
+  };
 }
 
 export async function getAllProfiles(): Promise<PlayerProfileData[]> {
@@ -610,7 +560,7 @@ export async function getAllProfiles(): Promise<PlayerProfileData[]> {
         .select('*')
         .order('xp', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         return data as PlayerProfileData[];
       }
     } catch (err) {
