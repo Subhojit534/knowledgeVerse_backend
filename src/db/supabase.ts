@@ -1247,6 +1247,23 @@ export async function sendGuildMessage(
   return message;
 }
 
+export async function getGuildMessages(guildId: string): Promise<GuildMessageData[]> {
+  if (supabaseClient) {
+    try {
+      const { data: msgList } = await supabaseClient
+        .from('guild_messages')
+        .select('*')
+        .eq('guild_id', guildId)
+        .order('created_at', { ascending: true })
+        .limit(50);
+      if (msgList && msgList.length > 0) {
+        return msgList as GuildMessageData[];
+      }
+    } catch (_) {}
+  }
+  return memoryGuildMessages.get(guildId) || [];
+}
+
 export async function sendFriendRequest(requesterId: string, addresseeId: string): Promise<FriendshipData> {
   const reqId = ensureUuid(requesterId);
   const addId = ensureUuid(addresseeId);
