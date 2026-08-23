@@ -147,11 +147,13 @@ export interface DuelChallengeData {
   subject: string;
   stake_coins: number;
   status: 'pending' | 'active' | 'completed' | 'declined';
+  session_id?: string;
   challenger_score?: number;
   challenged_score?: number;
   winner_id?: string;
   created_at?: string;
 }
+
 
 export interface LeaderboardEntryData {
   rank: number;
