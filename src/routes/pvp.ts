@@ -9,12 +9,14 @@ import {
   getPvPLeaderboard,
   getPendingPvPChallenges,
   respondToPvPChallenge,
+  consumePvPChallenge,
   createDuelChallenge,
   createPvPRoom,
   joinPvPRoom,
   getPvPRoomStatus,
   cancelPvPRoom,
 } from '../db/supabase.js';
+
 
 import { generateLearningContentWithGroq } from '../services/groq.js';
 import { getQuestionsForBuilding } from '../data/questionsData.js';
@@ -204,7 +206,7 @@ pvpRouter.get('/challenges', async (req: Request, res: Response) => {
 // 8. SEND CHALLENGE TO FRIEND
 pvpRouter.post('/challenge', async (req: Request, res: Response) => {
   try {
-    const { challengerId, challengedId, subject, stakeCoins } = req.body || {};
+    const { challengerId, challengedId, subject, stakeCoins, challengerName, challengedName } = req.body || {};
     if (!challengedId) {
       return res.status(400).json({ success: false, error: 'challengedId is required' });
     }
@@ -214,7 +216,9 @@ pvpRouter.post('/challenge', async (req: Request, res: Response) => {
       challengedId,
       'arena',
       subject || 'Mathematics',
-      Number(stakeCoins) || 50
+      Number(stakeCoins) || 50,
+      challengerName,
+      challengedName
     );
 
     res.json({
@@ -253,6 +257,20 @@ pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Failed to respond to duel challenge' });
   }
 });
+
+// 9b. CONSUME CHALLENGE (Mark as joined to prevent repeated auto-start loops)
+pvpRouter.post('/challenges/consume', async (req: Request, res: Response) => {
+  try {
+    const { challengeId, sessionId } = req.body || {};
+    if (challengeId) {
+      await consumePvPChallenge(challengeId, sessionId);
+    }
+    res.json({ success: true });
+  } catch (_) {
+    res.json({ success: true });
+  }
+});
+
 
 // 10. CREATE PRIVATE ROOM CODE
 pvpRouter.post('/room/create', async (req: Request, res: Response) => {

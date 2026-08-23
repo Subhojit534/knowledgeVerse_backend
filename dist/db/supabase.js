@@ -1239,14 +1239,18 @@ export async function getFriendsData(userId) {
         availableExplorers: otherProfiles,
     };
 }
-export async function createDuelChallenge(challengerId, challengedId, buildingId, subject, stakeCoins = 50) {
-    const cId = ensureUuid(challengerId);
-    const tId = ensureUuid(challengedId);
+export async function createDuelChallenge(challengerId, challengedId, buildingId, subject, stakeCoins = 50, challengerName, challengedName) {
+    const cProfile = await getProfile(ensureUuid(challengerId));
+    const tProfile = await getProfile(ensureUuid(challengedId));
+    const effChallengerName = challengerName || cProfile.name || 'Challenger';
+    const effChallengedName = challengedName || tProfile.name || 'Friend';
     const duelId = crypto.randomUUID();
     const duel = {
         id: duelId,
-        challenger_id: cId,
-        challenged_id: tId,
+        challenger_id: String(challengerId || '').trim(),
+        challenged_id: String(challengedId || '').trim(),
+        challenger_name: effChallengerName,
+        challenged_name: effChallengedName,
         building_id: buildingId,
         subject: subject,
         stake_coins: stakeCoins,
@@ -1259,9 +1263,10 @@ export async function createDuelChallenge(challengerId, challengedId, buildingId
             await supabaseClient.from('duels').insert(duel);
         }
         catch (err) {
-            console.error('❌ [Supabase DB Error]: Insert duel failed:', err);
+            console.warn('⚠️ [Supabase DB Error]: Insert duel failed:', err);
         }
     }
+    console.log(`⚔️ [PvP Challenge Created]: "${effChallengerName}" (${challengerId}) -> "${effChallengedName}" (${challengedId}) for ${subject}`);
     return duel;
 }
 // ============================================================================
@@ -1786,18 +1791,24 @@ export async function getPvPLeaderboard() {
     return list.slice(0, 30);
 }
 export async function getPendingPvPChallenges(userId) {
-    const validId = ensureUuid(userId);
     const cleanUserId = String(userId || '').trim().toLowerCase();
-    const profile = await getProfile(validId);
+    if (!cleanUserId || cleanUserId === 'undefined' || cleanUserId === 'null') {
+        return { received: [], sent: [] };
+    }
+    const validId = ensureUuid(userId).toLowerCase();
+    const profile = await getProfile(ensureUuid(userId));
     const profileName = (profile.name || '').trim().toLowerCase();
     const profileId = (profile.id || '').trim().toLowerCase();
-    // 1. Sync from Supabase duels table if available
+    const isGenericName = !profileName || profileName === 'explorer' || profileName === 'player' || profileName === 'duelist' || profileName === 'demo-user-123';
+    // 1. Sync recent duels from Supabase if available (only within last 15 minutes)
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     if (supabaseClient) {
         try {
             const { data, error } = await supabaseClient
                 .from('duels')
                 .select('*')
                 .in('status', ['pending', 'active'])
+                .gte('created_at', fifteenMinsAgo)
                 .order('created_at', { ascending: false })
                 .limit(30);
             if (!error && data) {
@@ -1810,29 +1821,33 @@ export async function getPendingPvPChallenges(userId) {
     }
     const received = [];
     const sent = [];
+    const now = Date.now();
     for (const d of memoryDuels.values()) {
+        // Exclude challenges older than 15 minutes or consumed/declined
+        const createdAtMs = d.created_at ? new Date(d.created_at).getTime() : now;
+        if (now - createdAtMs > 15 * 60 * 1000) {
+            continue;
+        }
         if (d.status === 'pending' || d.status === 'active') {
-            const challenger = await getProfile(d.challenger_id);
-            const challenged = await getProfile(d.challenged_id);
-            const dChallengedId = (d.challenged_id || '').toLowerCase();
-            const dChallengerId = (d.challenger_id || '').toLowerCase();
-            const challengedName = (challenged.name || '').toLowerCase();
-            const challengerName = (challenger.name || '').toLowerCase();
-            const isChallengedMe = dChallengedId === validId.toLowerCase() ||
-                dChallengedId === cleanUserId ||
-                dChallengedId === profileId ||
-                (profileName.length > 1 && challengedName === profileName);
-            const isChallengerMe = dChallengerId === validId.toLowerCase() ||
-                dChallengerId === cleanUserId ||
-                dChallengerId === profileId ||
-                (profileName.length > 1 && challengerName === profileName);
-            if (isChallengedMe) {
+            const dChallengedId = String(d.challenged_id || '').trim().toLowerCase();
+            const dChallengerId = String(d.challenger_id || '').trim().toLowerCase();
+            const dChallengedName = String(d.challenged_name || '').trim().toLowerCase();
+            const dChallengerName = String(d.challenger_name || '').trim().toLowerCase();
+            // Check if I am the challenged player (received challenge)
+            const isChallengedMe = (dChallengedId.length > 0 && (dChallengedId === cleanUserId || dChallengedId === validId || (profileId.length > 0 && dChallengedId === profileId))) ||
+                (!isGenericName && dChallengedName.length > 2 && dChallengedName === profileName);
+            // Check if I am the challenger (sent challenge)
+            const isChallengerMe = (dChallengerId.length > 0 && (dChallengerId === cleanUserId || dChallengerId === validId || (profileId.length > 0 && dChallengerId === profileId))) ||
+                (!isGenericName && dChallengerName.length > 2 && dChallengerName === profileName);
+            const challengerDispName = d.challenger_name || (await getProfile(d.challenger_id)).name || 'Challenger';
+            const challengedDispName = d.challenged_name || (await getProfile(d.challenged_id)).name || 'Friend';
+            if (isChallengedMe && !isChallengerMe) {
                 received.push({
                     id: d.id,
                     challengerId: d.challenger_id,
-                    challengerName: challenger.name,
+                    challengerName: challengerDispName,
                     challengedId: d.challenged_id,
-                    challengedName: challenged.name,
+                    challengedName: challengedDispName,
                     subject: d.subject,
                     stakeCoins: d.stake_coins,
                     status: d.status,
@@ -1844,9 +1859,9 @@ export async function getPendingPvPChallenges(userId) {
                 sent.push({
                     id: d.id,
                     challengerId: d.challenger_id,
-                    challengerName: challenger.name,
+                    challengerName: challengerDispName,
                     challengedId: d.challenged_id,
-                    challengedName: challenged.name,
+                    challengedName: challengedDispName,
                     subject: d.subject,
                     stakeCoins: d.stake_coins,
                     status: d.status,
@@ -1916,13 +1931,15 @@ export async function respondToPvPChallenge(challengeId, accept, questions = [])
     const challenged = await getProfile(duel.challenged_id);
     const cStats = await getUserPvPStats(duel.challenger_id);
     const tStats = await getUserPvPStats(duel.challenged_id);
+    const effChallengerName = duel.challenger_name || challenger.name || 'Challenger';
+    const effChallengedName = duel.challenged_name || challenged.name || 'Defender';
     const p1Id = challenger.id || ensureUuid(duel.challenger_id);
     const p2Id = challenged.id || ensureUuid(duel.challenged_id);
     const p1 = {
         id: p1Id,
-        name: challenger.name || 'Challenger',
+        name: effChallengerName,
         title: challenger.learning_goal || 'Challenger Scholar',
-        avatar_initial: challenger.name ? challenger.name.charAt(0).toUpperCase() : 'C',
+        avatar_initial: effChallengerName ? effChallengerName.charAt(0).toUpperCase() : 'C',
         avatar_color: '#60A5FA',
         avatar_index: challenger.avatar_index || 0,
         level: challenger.level || 1,
@@ -1937,9 +1954,9 @@ export async function respondToPvPChallenge(challengeId, accept, questions = [])
     };
     const p2 = {
         id: p2Id,
-        name: challenged.name || 'Defender',
+        name: effChallengedName,
         title: challenged.learning_goal || 'Defender Scholar',
-        avatar_initial: challenged.name ? challenged.name.charAt(0).toUpperCase() : 'D',
+        avatar_initial: effChallengedName ? effChallengedName.charAt(0).toUpperCase() : 'D',
         avatar_color: '#F2CA50',
         avatar_index: challenged.avatar_index || 0,
         level: challenged.level || 1,
@@ -1991,6 +2008,18 @@ export async function respondToPvPChallenge(challengeId, accept, questions = [])
     }
     console.log(`⚔️ [PvP Challenge Accepted]: Created Live Duel Match (${p1.name} vs ${p2.name}) in session ${sessionId}`);
     return { success: true, session };
+}
+export async function consumePvPChallenge(challengeId, sessionId) {
+    const duel = memoryDuels.get(challengeId);
+    if (duel) {
+        duel.status = 'completed';
+    }
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('duels').update({ status: 'completed' }).eq('id', challengeId);
+        }
+        catch (_) { }
+    }
 }
 const memoryPvPRooms = new Map();
 export async function createPvPRoom(params) {
