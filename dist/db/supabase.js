@@ -1771,7 +1771,16 @@ export async function getPvPLeaderboard() {
             });
         }
     }
-    const list = Array.from(memoryPvPStats.values());
+    // Deduplicate entries strictly by normalized player name (keep the highest rating)
+    const uniqueByName = new Map();
+    for (const stats of memoryPvPStats.values()) {
+        const nameKey = (stats.name || 'Duelist').trim().toLowerCase();
+        const existing = uniqueByName.get(nameKey);
+        if (!existing || stats.rating > existing.rating) {
+            uniqueByName.set(nameKey, stats);
+        }
+    }
+    const list = Array.from(uniqueByName.values());
     list.sort((a, b) => b.rating - a.rating);
     return list.slice(0, 30);
 }
