@@ -18,32 +18,33 @@ import { MCQuestion } from '../types/index.js';
 export const pvpRouter = Router();
 
 /**
- * Helper to fetch or generate 5 quiz questions for a PvP subject match.
+ * Helper to fetch 5 quiz questions for a PvP subject match instantly (no blocking network calls).
  */
-async function getPvPQuestions(subject: string, grade: string = 'Class 10', curriculum: string = 'CBSE'): Promise<MCQuestion[]> {
+function getPvPQuestions(subject: string, grade: string = 'Class 10', curriculum: string = 'CBSE'): MCQuestion[] {
   try {
-    const content = await generateLearningContentWithGroq({
-      building_id: 'arena',
-      building_name: `${subject} Duel Arena`,
-      subject: subject === 'Omni-Duel' ? 'General Academic' : subject,
-      student_level: 3,
-      topic: `${subject} Competitive Quiz Duel`,
-      difficulty: 'Hard',
-      grade: grade || 'Class 10',
-      curriculum: curriculum || 'CBSE',
-    });
-
-    if (content && Array.isArray(content.questions) && content.questions.length >= 4) {
-      return content.questions;
+    const fallback = getQuestionsForBuilding('arena', subject);
+    if (fallback && Array.isArray(fallback.questions) && fallback.questions.length > 0) {
+      // Return shuffled 5-question pool for high variability
+      return [...fallback.questions].sort(() => Math.random() - 0.5).slice(0, 5);
     }
   } catch (err) {
-    console.warn('⚠️ [PvP Questions Fallback]:', err);
+    console.warn('⚠️ [PvP Questions Fallback Error]:', err);
   }
 
-  // Fallback questions from offline dataset
-  const fallback = getQuestionsForBuilding('arena', subject);
-  return fallback.questions;
+  // Guaranteed fallback default question
+  return [
+    {
+      id: 1,
+      question: 'Which principle states that energy cannot be created or destroyed, only transformed?',
+      options: ['Law of Conservation of Energy', 'Newton\'s First Law', 'Hooke\'s Law', 'Pascal\'s Principle'],
+      correct_index: 0,
+      explanation: 'The Law of Conservation of Energy states total energy remains constant.',
+    },
+  ];
+
+
 }
+
 
 // 1. MATCHMAKING QUEUE / INSTANT AI MATCH (Practice) / REAL DUEL POOL
 pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
