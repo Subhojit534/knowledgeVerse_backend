@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import {
   matchmakePvP,
+  cancelMatchmaking,
   getPvPSession,
   submitPvPRound,
   finishPvPSession,
@@ -44,7 +45,7 @@ async function getPvPQuestions(subject: string, grade: string = 'Class 10', curr
   return fallback.questions;
 }
 
-// 1. MATCHMAKING QUEUE / INSTANT AI MATCH
+// 1. MATCHMAKING QUEUE / INSTANT AI MATCH (Practice) / REAL DUEL POOL
 pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
   try {
     const { userId, subject, stakeCoins, isRanked, grade, curriculum } = req.body || {};
@@ -53,7 +54,7 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
     const stake = Number(stakeCoins) >= 0 ? Number(stakeCoins) : 50;
     const ranked = isRanked !== false;
 
-    console.log(`⚔️ [PvP Matchmake Request]: Player ${uId} seeking ${sub} match (Stake: ${stake} coins)`);
+    console.log(`⚔️ [PvP Matchmake Request]: Player ${uId} seeking ${sub} match (Ranked/Real: ${ranked}, Stake: ${stake} coins)`);
 
     const questions = await getPvPQuestions(sub, grade, curriculum);
     const result = await matchmakePvP(uId, sub, stake, ranked, questions);
@@ -62,6 +63,7 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
       success: true,
       matchedWithAI: result.matchedWithAI,
       session: result.session,
+      waiting: result.waiting || false,
     });
   } catch (err: any) {
     console.error('❌ [PvP Matchmake Error]:', err);
@@ -69,6 +71,17 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
       success: false,
       error: err.message || 'Failed to matchmake PvP duel',
     });
+  }
+});
+
+// CANCEL MATCHMAKING QUEUE
+pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body || {};
+    cancelMatchmaking(String(userId || 'demo-user-123'));
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

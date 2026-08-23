@@ -1384,14 +1384,57 @@ export async function matchmakePvP(userId, subject, stakeCoins = 50, isRanked = 
     if (stakeCoins > 0 && (profile.coins || 0) < stakeCoins) {
         throw new Error(`Insufficient coins to enter duel! You need ${stakeCoins} coins.`);
     }
-    // 1. Check if this player was already matched into a session by another human duelist
+    // ─── 1. PRACTICE MODE (isRanked === false): INSTANT AI SCHOLAR BOT ─────
+    if (!isRanked) {
+        console.log(`🤖 [PvP Practice Mode]: Spawning instant AI Scholar for ${profile.name || validId}`);
+        const opponentCombatant = createAiOpponent(subject, userStats.rating);
+        const playerCombatant = {
+            id: validId,
+            name: profile.name || 'Scholar Duelist',
+            title: profile.learning_goal || 'Academy Duelist',
+            avatar_initial: profile.name ? profile.name.charAt(0).toUpperCase() : 'W',
+            avatar_color: '#F2CA50',
+            avatar_index: profile.avatar_index || 0,
+            level: profile.level || 1,
+            rating: userStats.rating,
+            tier: userStats.tier,
+            is_bot: false,
+            hp: 1000,
+            score: 0,
+            correct_count: 0,
+            avg_time_ms: 0,
+            answers: [],
+        };
+        const sessionId = crypto.randomUUID();
+        const session = {
+            id: sessionId,
+            subject: subject,
+            building_id: 'arena',
+            stake_coins: 0,
+            is_ranked: false,
+            total_rounds: questions.length || 5,
+            current_round: 0,
+            status: 'in_progress',
+            combatants: {
+                [playerCombatant.id]: playerCombatant,
+                [opponentCombatant.id]: opponentCombatant,
+            },
+            questions: questions,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+        memoryPvPSessions.set(sessionId, session);
+        return { session, matchedWithAI: true };
+    }
+    // ─── 2. REAL DUEL MODE (isRanked === true): REAL HUMAN PLAYERS ONLY ────
+    // 2a. Check if this player was already matched into a session by another human duelist
     if (matchedSessionsByUserId.has(validId)) {
         const matchedSession = matchedSessionsByUserId.get(validId);
         matchedSessionsByUserId.delete(validId);
-        console.log(`⚔️ [PvP Matchmake]: Player ${profile.name || validId} retrieved shared session (${matchedSession.id})`);
+        console.log(`⚔️ [PvP Matchmake]: Player ${profile.name || validId} retrieved shared real session (${matchedSession.id})`);
         return { session: matchedSession, matchedWithAI: false };
     }
-    // 2. Check if another human player is currently queued waiting for a match
+    // 2b. Check if another human player is currently queued waiting for a match
     const queueIdx = memoryMatchmakingQueue.findIndex((q) => q.userId !== validId && (q.subject === 'Omni-Duel' || subject === 'Omni-Duel' || q.subject.toLowerCase() === subject.toLowerCase()));
     if (queueIdx >= 0) {
         const queuedOpponent = memoryMatchmakingQueue.splice(queueIdx, 1)[0];
@@ -1439,7 +1482,7 @@ export async function matchmakePvP(userId, subject, stakeCoins = 50, isRanked = 
             subject: subject,
             building_id: 'arena',
             stake_coins: stakeCoins,
-            is_ranked: isRanked,
+            is_ranked: true,
             total_rounds: sharedQuestions.length || 5,
             current_round: 0,
             status: 'in_progress',
@@ -1452,26 +1495,28 @@ export async function matchmakePvP(userId, subject, stakeCoins = 50, isRanked = 
             updated_at: new Date().toISOString(),
         };
         memoryPvPSessions.set(sessionId, session);
-        // Store in matched map so waiting opponent receives the exact same session
         matchedSessionsByUserId.set(queuedOpponent.userId, session);
         console.log(`⚔️ [PvP Live Matchmaking]: PAIRED 2 HUMAN DUELISTS! (${playerCombatant.name} vs ${opponentCombatant.name}) in session ${sessionId}`);
         return { session, matchedWithAI: false };
     }
-    // 3. No one is currently in the queue: Add this player and wait up to 4.5s for a friend to join!
-    const queueEntry = {
-        userId: validId,
-        subject: subject,
-        stakeCoins: stakeCoins,
-        isRanked: isRanked,
-        queuedAt: Date.now(),
-        profile: profile,
-        userStats: userStats,
-        questions: questions,
-    };
-    memoryMatchmakingQueue.push(queueEntry);
-    console.log(`⏳ [PvP Matchmaking]: Player ${profile.name || validId} queued for ${subject}. Waiting for human opponent...`);
-    // Wait loop (polls every 250ms for up to 4500ms)
-    const maxWaitMs = 4500;
+    // 2c. Add to queue if not already present
+    let existingEntry = memoryMatchmakingQueue.find((q) => q.userId === validId);
+    if (!existingEntry) {
+        existingEntry = {
+            userId: validId,
+            subject: subject,
+            stakeCoins: stakeCoins,
+            isRanked: true,
+            queuedAt: Date.now(),
+            profile: profile,
+            userStats: userStats,
+            questions: questions,
+        };
+        memoryMatchmakingQueue.push(existingEntry);
+        console.log(`⏳ [PvP Matchmaking]: Player ${profile.name || validId} queued for ${subject}. Waiting for real human opponent...`);
+    }
+    // Wait loop: Poll every 250ms for up to 5000ms
+    const maxWaitMs = 5000;
     const startTime = Date.now();
     while (Date.now() - startTime < maxWaitMs) {
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -1481,53 +1526,20 @@ export async function matchmakePvP(userId, subject, stakeCoins = 50, isRanked = 
             const idx = memoryMatchmakingQueue.findIndex((q) => q.userId === validId);
             if (idx >= 0)
                 memoryMatchmakingQueue.splice(idx, 1);
-            console.log(`⚡ [PvP Matchmaking]: Player ${profile.name || validId} was matched during waiting window! Session: ${session.id}`);
+            console.log(`⚡ [PvP Live Matchmaking]: Player ${profile.name || validId} paired with real duelist! Session: ${session.id}`);
             return { session, matchedWithAI: false };
         }
     }
-    // 4. Timeout reached and no human joined -> Remove from queue and fallback to AI Scholar Bot
-    const cleanupIdx = memoryMatchmakingQueue.findIndex((q) => q.userId === validId);
-    if (cleanupIdx >= 0)
-        memoryMatchmakingQueue.splice(cleanupIdx, 1);
-    console.log(`🤖 [PvP Matchmaking]: No human opponent found in 4.5s. Pairing ${profile.name || validId} with AI Scholar.`);
-    const opponentCombatant = createAiOpponent(subject, userStats.rating);
-    const playerCombatant = {
-        id: validId,
-        name: profile.name || 'Master Scholar',
-        title: profile.learning_goal || 'Master Scholar',
-        avatar_initial: profile.name ? profile.name.charAt(0).toUpperCase() : 'W',
-        avatar_color: '#F2CA50',
-        avatar_index: profile.avatar_index || 0,
-        level: profile.level || 1,
-        rating: userStats.rating,
-        tier: userStats.tier,
-        is_bot: false,
-        hp: 1000,
-        score: 0,
-        correct_count: 0,
-        avg_time_ms: 0,
-        answers: [],
-    };
-    const sessionId = crypto.randomUUID();
-    const session = {
-        id: sessionId,
-        subject: subject,
-        building_id: 'arena',
-        stake_coins: stakeCoins,
-        is_ranked: isRanked,
-        total_rounds: questions.length || 5,
-        current_round: 0,
-        status: 'in_progress',
-        combatants: {
-            [playerCombatant.id]: playerCombatant,
-            [opponentCombatant.id]: opponentCombatant,
-        },
-        questions: questions,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    };
-    memoryPvPSessions.set(sessionId, session);
-    return { session, matchedWithAI: true };
+    // Still waiting in queue for real opponent (keep in queue for subsequent polls)
+    return { session: null, matchedWithAI: false, waiting: true };
+}
+export function cancelMatchmaking(userId) {
+    const validId = ensureUuid(userId);
+    const idx = memoryMatchmakingQueue.findIndex((q) => q.userId === validId);
+    if (idx >= 0) {
+        memoryMatchmakingQueue.splice(idx, 1);
+        console.log(`🛑 [PvP Matchmaking]: User ${validId} cancelled queue`);
+    }
 }
 export function getPvPSession(sessionId) {
     return memoryPvPSessions.get(sessionId) || null;
