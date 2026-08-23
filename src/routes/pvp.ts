@@ -10,7 +10,12 @@ import {
   getPendingPvPChallenges,
   respondToPvPChallenge,
   createDuelChallenge,
+  createPvPRoom,
+  joinPvPRoom,
+  getPvPRoomStatus,
+  cancelPvPRoom,
 } from '../db/supabase.js';
+
 import { generateLearningContentWithGroq } from '../services/groq.js';
 import { getQuestionsForBuilding } from '../data/questionsData.js';
 import { MCQuestion } from '../types/index.js';
@@ -248,3 +253,85 @@ pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Failed to respond to duel challenge' });
   }
 });
+
+// 10. CREATE PRIVATE ROOM CODE
+pvpRouter.post('/room/create', async (req: Request, res: Response) => {
+  try {
+    const { userId, playerName, subject, stakeCoins, grade, curriculum } = req.body || {};
+    const questions = await getPvPQuestions(subject || 'Mathematics', grade, curriculum);
+
+    const result = await createPvPRoom({
+      userId: String(userId || 'player-1'),
+      playerName: playerName ? String(playerName) : undefined,
+      subject: String(subject || 'Mathematics'),
+      stakeCoins: Number(stakeCoins) || 50,
+      grade,
+      curriculum,
+      questions,
+    });
+
+    res.json({
+      success: true,
+      roomCode: result.roomCode,
+      room: result.room,
+    });
+  } catch (err: any) {
+    console.error('❌ [PvP Create Room Error]:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to create room' });
+  }
+});
+
+// 11. JOIN PRIVATE ROOM CODE
+pvpRouter.post('/room/join', async (req: Request, res: Response) => {
+  try {
+    const { roomCode, userId, playerName } = req.body || {};
+    if (!roomCode) {
+      return res.status(400).json({ success: false, error: 'Room code is required' });
+    }
+
+    const result = await joinPvPRoom({
+      roomCode: String(roomCode),
+      userId: String(userId || 'player-2'),
+      playerName: playerName ? String(playerName) : undefined,
+    });
+
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.error || 'Failed to join room' });
+    }
+
+    res.json({
+      success: true,
+      session: result.session,
+    });
+  } catch (err: any) {
+    console.error('❌ [PvP Join Room Error]:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to join room' });
+  }
+});
+
+// 12. GET PRIVATE ROOM STATUS
+pvpRouter.get('/room/status/:roomCode', async (req: Request, res: Response) => {
+  try {
+    const roomCode = String(req.params.roomCode);
+    const result = getPvPRoomStatus(roomCode);
+    res.json(result);
+  } catch (err: any) {
+    console.error('❌ [PvP Room Status Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to get room status' });
+  }
+});
+
+// 13. CANCEL PRIVATE ROOM
+pvpRouter.post('/room/cancel', async (req: Request, res: Response) => {
+  try {
+    const { roomCode, userId } = req.body || {};
+    if (roomCode) {
+      cancelPvPRoom(String(roomCode), userId ? String(userId) : undefined);
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('❌ [PvP Cancel Room Error]:', err);
+    res.status(500).json({ success: false, error: 'Failed to cancel room' });
+  }
+});
+

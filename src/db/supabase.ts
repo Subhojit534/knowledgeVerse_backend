@@ -17,6 +17,8 @@ import {
   PvPTier,
   MCQuestion,
 } from '../types/index.js';
+import { getQuestionsForBuilding } from '../data/questionsData.js';
+
 
 
 export let supabaseClient: SupabaseClient | null = null;
@@ -2082,12 +2084,13 @@ export async function getPvPLeaderboard(): Promise<PvPStats[]> {
 
 export async function getPendingPvPChallenges(userId: string): Promise<{ received: any[]; sent: any[] }> {
   const validId = ensureUuid(userId);
+  const cleanUserId = String(userId || '');
   const received: any[] = [];
   const sent: any[] = [];
 
   for (const d of memoryDuels.values()) {
-    if (d.status === 'pending') {
-      if (d.challenged_id === validId) {
+    if (d.status === 'pending' || d.status === 'active') {
+      if (d.challenged_id === validId || d.challenged_id === cleanUserId) {
         const challenger = await getProfile(d.challenger_id);
         received.push({
           id: d.id,
@@ -2095,9 +2098,11 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
           challengerName: challenger.name,
           subject: d.subject,
           stakeCoins: d.stake_coins,
+          status: d.status,
+          sessionId: d.session_id,
           createdAt: d.created_at,
         });
-      } else if (d.challenger_id === validId) {
+      } else if (d.challenger_id === validId || d.challenger_id === cleanUserId) {
         const challenged = await getProfile(d.challenged_id);
         sent.push({
           id: d.id,
@@ -2105,6 +2110,8 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
           challengedName: challenged.name,
           subject: d.subject,
           stakeCoins: d.stake_coins,
+          status: d.status,
+          sessionId: d.session_id,
           createdAt: d.created_at,
         });
       }
@@ -2112,6 +2119,12 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
   }
 
   return { received, sent };
+}
+
+function getFallbackArenaQuestions(subject: string): MCQuestion[] {
+  const payload = getQuestionsForBuilding('arena', subject);
+  if (Array.isArray(payload)) return payload;
+  return payload && (payload as any).questions ? (payload as any).questions : [];
 }
 
 export async function respondToPvPChallenge(
@@ -2171,10 +2184,13 @@ export async function respondToPvPChallenge(
     hp: 1000,
     score: 0,
     correct_count: 0,
-
     avg_time_ms: 0,
     answers: [],
   };
+
+  const sharedQuestions = (questions && questions.length >= 4)
+    ? questions
+    : getFallbackArenaQuestions(duel.subject || 'Mathematics');
 
   const sessionId = crypto.randomUUID();
   const session: PvPSession = {
@@ -2183,12 +2199,185 @@ export async function respondToPvPChallenge(
     building_id: duel.building_id || 'arena',
     stake_coins: duel.stake_coins,
     is_ranked: true,
-    total_rounds: questions.length || 5,
+    total_rounds: sharedQuestions.length || 5,
     current_round: 0,
     status: 'in_progress',
     combatants: {
       [p1.id]: p1,
       [p2.id]: p2,
+    },
+    questions: sharedQuestions,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  memoryPvPSessions.set(sessionId, session);
+  memoryActiveSessionsByUser.set(p1.id, { session, matchedAt: Date.now() });
+  memoryActiveSessionsByUser.set(p2.id, { session, matchedAt: Date.now() });
+  memoryActiveSessionsByUser.set(duel.challenger_id, { session, matchedAt: Date.now() });
+  memoryActiveSessionsByUser.set(duel.challenged_id, { session, matchedAt: Date.now() });
+
+  duel.session_id = sessionId;
+  duel.status = 'active';
+
+  return { success: true, session };
+}
+
+// ============================================================================
+// PVP PRIVATE ROOM / MANUAL DUEL ENGINE
+// ============================================================================
+
+export interface PvPRoom {
+  roomCode: string;
+  hostId: string;
+  hostName: string;
+  hostProfile: any;
+  hostStats: PvPStats;
+  subject: string;
+  stakeCoins: number;
+  grade?: string;
+  curriculum?: string;
+  questions?: MCQuestion[];
+  guestId?: string;
+  guestName?: string;
+  status: 'waiting' | 'ready' | 'cancelled';
+  session?: PvPSession;
+  createdAt: number;
+}
+
+const memoryPvPRooms = new Map<string, PvPRoom>();
+
+export async function createPvPRoom(params: {
+  userId: string;
+  playerName?: string;
+  subject: string;
+  stakeCoins: number;
+  grade?: string;
+  curriculum?: string;
+  questions?: MCQuestion[];
+}): Promise<{ roomCode: string; room: PvPRoom }> {
+  const cleanUserId = String(params.userId || 'player-1');
+  const profile = await getProfile(cleanUserId);
+  const effectiveName = params.playerName || profile.name || 'Duelist';
+  const userStats = await getUserPvPStats(cleanUserId);
+
+  let roomCode = '';
+  for (let i = 0; i < 10; i++) {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!memoryPvPRooms.has(code)) {
+      roomCode = code;
+      break;
+    }
+  }
+  if (!roomCode) roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const questions = (params.questions && params.questions.length >= 4)
+    ? params.questions
+    : getFallbackArenaQuestions(params.subject || 'Mathematics');
+
+  const room: PvPRoom = {
+    roomCode,
+    hostId: cleanUserId,
+    hostName: effectiveName,
+    hostProfile: profile,
+    hostStats: userStats,
+    subject: params.subject || 'Mathematics',
+    stakeCoins: params.stakeCoins || 50,
+    grade: params.grade,
+    curriculum: params.curriculum,
+    questions,
+    status: 'waiting',
+    createdAt: Date.now(),
+  };
+
+  memoryPvPRooms.set(roomCode, room);
+  console.log(`🏠 [PvP Room Created]: Code ${roomCode} by ${effectiveName} (${params.subject}, ${params.stakeCoins} coins)`);
+  return { roomCode, room };
+}
+
+export async function joinPvPRoom(params: {
+  roomCode: string;
+  userId: string;
+  playerName?: string;
+}): Promise<{ success: boolean; session?: PvPSession; error?: string }> {
+  const code = params.roomCode.trim().toUpperCase();
+  const room = memoryPvPRooms.get(code);
+
+  if (!room) {
+    return { success: false, error: 'Room code not found or expired' };
+  }
+
+  if (room.status === 'cancelled') {
+    return { success: false, error: 'Room was cancelled by host' };
+  }
+
+  const guestId = String(params.userId || 'guest-player');
+  const guestProfile = await getProfile(guestId);
+  const guestName = params.playerName || guestProfile.name || 'Challenger';
+  const guestStats = await getUserPvPStats(guestId);
+
+  if (room.hostId === guestId && room.hostName.toLowerCase() === guestName.toLowerCase()) {
+    return { success: false, error: 'You cannot join your own room from the same device' };
+  }
+
+  if (room.status === 'ready' && room.session) {
+    return { success: true, session: room.session };
+  }
+
+  const hostCombatant: PvPCombatant = {
+    id: room.hostId,
+    name: room.hostName,
+    title: room.hostProfile.learning_goal || 'Master Scholar',
+    avatar_initial: room.hostName.charAt(0).toUpperCase(),
+    avatar_color: '#F2CA50',
+    avatar_index: room.hostProfile.avatar_index || 0,
+    level: room.hostProfile.level || 1,
+    rating: room.hostStats.rating,
+    tier: room.hostStats.tier,
+    is_bot: false,
+    hp: 1000,
+    score: 0,
+    correct_count: 0,
+    avg_time_ms: 0,
+    answers: [],
+  };
+
+  const guestCombatant: PvPCombatant = {
+    id: guestId,
+    name: guestName,
+    title: guestProfile.learning_goal || 'Duelist Scholar',
+    avatar_initial: guestName.charAt(0).toUpperCase(),
+    avatar_color: '#60A5FA',
+    avatar_index: guestProfile.avatar_index || 0,
+    level: guestProfile.level || 1,
+    rating: guestStats.rating,
+    tier: guestStats.tier,
+    is_bot: false,
+    hp: 1000,
+    score: 0,
+    correct_count: 0,
+    avg_time_ms: 0,
+    answers: [],
+  };
+
+  const questions = room.questions && room.questions.length >= 4
+    ? room.questions
+    : getFallbackArenaQuestions(room.subject);
+
+
+  const sessionId = crypto.randomUUID();
+  const session: PvPSession = {
+    id: sessionId,
+    subject: room.subject,
+    building_id: 'arena',
+    stake_coins: room.stakeCoins,
+    is_ranked: true,
+    total_rounds: questions.length || 5,
+    current_round: 0,
+    status: 'in_progress',
+    combatants: {
+      [hostCombatant.id]: hostCombatant,
+      [guestCombatant.id]: guestCombatant,
     },
     questions,
     created_at: new Date().toISOString(),
@@ -2196,6 +2385,35 @@ export async function respondToPvPChallenge(
   };
 
   memoryPvPSessions.set(sessionId, session);
+  memoryActiveSessionsByUser.set(room.hostId, { session, matchedAt: Date.now() });
+  memoryActiveSessionsByUser.set(guestId, { session, matchedAt: Date.now() });
+
+  room.guestId = guestId;
+  room.guestName = guestName;
+  room.status = 'ready';
+  room.session = session;
+
+  console.log(`⚔️ [PvP Room Joined]: ${guestName} joined room ${code} hosted by ${room.hostName}! Session: ${sessionId}`);
   return { success: true, session };
 }
+
+export function getPvPRoomStatus(roomCode: string): { success: boolean; status: string; session?: PvPSession } {
+  const code = roomCode.trim().toUpperCase();
+  const room = memoryPvPRooms.get(code);
+  if (!room) {
+    return { success: false, status: 'not_found' };
+  }
+  return { success: true, status: room.status, session: room.session };
+}
+
+export function cancelPvPRoom(roomCode: string, userId?: string): void {
+  const code = roomCode.trim().toUpperCase();
+  const room = memoryPvPRooms.get(code);
+  if (room) {
+    room.status = 'cancelled';
+    memoryPvPRooms.delete(code);
+    console.log(`🛑 [PvP Room Cancelled]: Room ${code}`);
+  }
+}
+
 
