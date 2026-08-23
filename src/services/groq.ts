@@ -81,13 +81,17 @@ function shuffleQuestionOptions(questions: any[]): MCQuestion[] {
   });
 }
 
+// In-memory cache for generated learning content (30 minutes TTL)
+const learningCache = new Map<string, { data: LearningContentPayload; timestamp: number }>();
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 /**
  * High-speed AI Learning Content & Quiz Generator powered by Groq AI.
  * 
  * Enforces strict pedagogical standards per student class (Class 6 - Class 12),
  * subject domain, and specific chapter/building topic.
  * 
- * Option B: Generates fresh, random, unique questions on every quiz attempt.
+ * Features smart 30-minute in-memory caching to minimize Groq API quota usage.
  */
 export async function generateLearningContentWithGroq(
   request: LearningRequest
@@ -100,7 +104,17 @@ export async function generateLearningContentWithGroq(
   const grade = request.grade || 'Class 10';
   const curriculum = request.curriculum || 'CBSE';
 
-  const cacheKey = `groq_${subject.toLowerCase()}_${buildingId.toLowerCase()}_lvl${level}_${Date.now()}`;
+  const cacheKey = `${subject.toLowerCase()}_${buildingId.toLowerCase()}_${grade.toLowerCase()}_lvl${level}`;
+
+  // 1. Check in-memory cache first to avoid wasteful API calls
+  const cached = learningCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    console.log(`📦 [Groq Cache Hit]: Serving cached content for ${cacheKey} (0 API calls)`);
+    return {
+      ...cached.data,
+      questions: shuffleQuestionOptions(cached.data.questions),
+    };
+  }
 
   try {
     const groq = getGroqClient();
@@ -176,15 +190,14 @@ Required JSON schema:
   ]
 }`;
 
+    // Valid high-performance Groq production models
     const modelsToTry = [
-      'groq/compound-mini',
-      'groq/compound',
-      'openai/gpt-oss-20b',
-      'openai/gpt-oss-120b',
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
     ];
 
     let responseText: string | null | undefined;
-    let selectedModel = 'groq/compound-mini';
+    let selectedModel = 'llama-3.3-70b-versatile';
 
     for (const model of modelsToTry) {
       try {
@@ -196,7 +209,7 @@ Required JSON schema:
           ],
           response_format: { type: 'json_object' },
           temperature: 0.7,
-          max_tokens: 2500,
+          max_tokens: 2000,
         });
         responseText = completion.choices[0]?.message?.content;
         if (responseText) {
@@ -238,12 +251,16 @@ Required JSON schema:
       cache_key: cacheKey,
     };
 
+    // Cache the successful generation to eliminate future redundant API calls
+    learningCache.set(cacheKey, { data: result, timestamp: Date.now() });
+
     console.log(`⚡ [Groq AI Success]: Generated random MCQs for ${grade} ${subject} - "${buildingName}" (${result.topic})`);
     return result;
   } catch (err) {
     console.warn(`⚠️ [Groq AI Fallback]: ${err}. Using offline questions dataset.`);
     const fallback = getQuestionsForBuilding(buildingId, subject);
     const randomizedFallback = shuffleQuestionOptions(fallback.questions);
+
 
     return {
       ...fallback,
