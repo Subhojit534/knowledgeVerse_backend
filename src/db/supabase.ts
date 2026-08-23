@@ -2084,28 +2084,54 @@ export async function getPvPLeaderboard(): Promise<PvPStats[]> {
 
 export async function getPendingPvPChallenges(userId: string): Promise<{ received: any[]; sent: any[] }> {
   const validId = ensureUuid(userId);
-  const cleanUserId = String(userId || '');
+  const cleanUserId = String(userId || '').trim().toLowerCase();
+  const profile = await getProfile(validId);
+  const profileName = (profile.name || '').trim().toLowerCase();
+  const profileId = (profile.id || '').trim().toLowerCase();
+
   const received: any[] = [];
   const sent: any[] = [];
 
   for (const d of memoryDuels.values()) {
     if (d.status === 'pending' || d.status === 'active') {
-      if (d.challenged_id === validId || d.challenged_id === cleanUserId) {
-        const challenger = await getProfile(d.challenger_id);
+      const challenger = await getProfile(d.challenger_id);
+      const challenged = await getProfile(d.challenged_id);
+
+      const dChallengedId = (d.challenged_id || '').toLowerCase();
+      const dChallengerId = (d.challenger_id || '').toLowerCase();
+      const challengedName = (challenged.name || '').toLowerCase();
+      const challengerName = (challenger.name || '').toLowerCase();
+
+      const isChallengedMe =
+        dChallengedId === validId.toLowerCase() ||
+        dChallengedId === cleanUserId ||
+        dChallengedId === profileId ||
+        (profileName.length > 1 && challengedName === profileName);
+
+      const isChallengerMe =
+        dChallengerId === validId.toLowerCase() ||
+        dChallengerId === cleanUserId ||
+        dChallengerId === profileId ||
+        (profileName.length > 1 && challengerName === profileName);
+
+      if (isChallengedMe) {
         received.push({
           id: d.id,
           challengerId: d.challenger_id,
           challengerName: challenger.name,
+          challengedId: d.challenged_id,
+          challengedName: challenged.name,
           subject: d.subject,
           stakeCoins: d.stake_coins,
           status: d.status,
           sessionId: d.session_id,
           createdAt: d.created_at,
         });
-      } else if (d.challenger_id === validId || d.challenger_id === cleanUserId) {
-        const challenged = await getProfile(d.challenged_id);
+      } else if (isChallengerMe) {
         sent.push({
           id: d.id,
+          challengerId: d.challenger_id,
+          challengerName: challenger.name,
           challengedId: d.challenged_id,
           challengedName: challenged.name,
           subject: d.subject,
@@ -2120,6 +2146,7 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
 
   return { received, sent };
 }
+
 
 function getFallbackArenaQuestions(subject: string): MCQuestion[] {
   const payload = getQuestionsForBuilding('arena', subject);
