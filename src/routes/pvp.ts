@@ -48,16 +48,16 @@ async function getPvPQuestions(subject: string, grade: string = 'Class 10', curr
 // 1. MATCHMAKING QUEUE / INSTANT AI MATCH (Practice) / REAL DUEL POOL
 pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
   try {
-    const { userId, subject, stakeCoins, isRanked, grade, curriculum } = req.body || {};
+    const { userId, playerName, subject, stakeCoins, isRanked, grade, curriculum } = req.body || {};
     const uId = userId || 'demo-user-123';
     const sub = subject || 'Mathematics';
     const stake = Number(stakeCoins) >= 0 ? Number(stakeCoins) : 50;
     const ranked = isRanked !== false;
 
-    console.log(`⚔️ [PvP Matchmake Request]: Player ${uId} seeking ${sub} match (Ranked/Real: ${ranked}, Stake: ${stake} coins)`);
+    console.log(`⚔️ [PvP Matchmake Request]: Player "${playerName || uId}" (${uId}) seeking ${sub} match (Ranked/Real: ${ranked}, Stake: ${stake} coins)`);
 
     const questions = await getPvPQuestions(sub, grade, curriculum);
-    const result = await matchmakePvP(uId, sub, stake, ranked, questions);
+    const result = await matchmakePvP(uId, sub, stake, ranked, questions, playerName);
 
     res.json({
       success: true,
@@ -65,6 +65,7 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
       session: result.session,
       waiting: result.waiting || false,
     });
+
   } catch (err: any) {
     console.error('❌ [PvP Matchmake Error]:', err);
     res.status(400).json({
