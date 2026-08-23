@@ -1807,23 +1807,19 @@ export async function matchmakePvP(
     existingEntry.queuedAt = Date.now();
   }
 
-  // Short wait loop: Poll every 150ms for up to 1000ms
-  const maxWaitMs = 1000;
-  const startTime = Date.now();
-  while (Date.now() - startTime < maxWaitMs) {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const matched = getActiveSessionForUser(cleanUserId, validId);
-    if (matched) {
-      const idx = memoryMatchmakingQueue.findIndex((q) => q.userId === cleanUserId || q.userId === validId);
-      if (idx >= 0) memoryMatchmakingQueue.splice(idx, 1);
-      console.log(`⚡ [PvP Live Matchmaking]: Player ${effectiveName} retrieved paired session (${matched.id})`);
-      return { session: matched, matchedWithAI: false };
-    }
+  // Check if matched in active sessions map
+  const matched = getActiveSessionForUser(cleanUserId, validId);
+  if (matched) {
+    const idx = memoryMatchmakingQueue.findIndex((q) => q.userId === cleanUserId || q.userId === validId);
+    if (idx >= 0) memoryMatchmakingQueue.splice(idx, 1);
+    console.log(`⚡ [PvP Live Matchmaking]: Player ${effectiveName} retrieved paired session (${matched.id})`);
+    return { session: matched, matchedWithAI: false };
   }
 
   // Still waiting in queue for real opponent (keep in queue for subsequent polls)
   return { session: null, matchedWithAI: false, waiting: true };
 }
+
 
 
 export function cancelMatchmaking(userId: string): void {
