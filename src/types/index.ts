@@ -168,3 +168,71 @@ export interface LeaderboardEntryData {
   avatarColor: string;
   domainMastery: string;
 }
+
+// ============================================================================
+// PVP DUEL ARENA TYPES
+// ============================================================================
+
+export type PvPTier = 'Bronze Scholar' | 'Silver Adept' | 'Gold Mage' | 'Platinum Sorcerer' | 'Diamond Arcanist' | 'Grand Archmage';
+
+export interface PvPCombatant {
+  id: string;
+  name: string;
+  title: string;
+  avatar_initial: string;
+  avatar_color: string;
+  avatar_index: number;
+  level: number;
+  rating: number;
+  tier: PvPTier;
+  is_bot: boolean;
+  hp: number; // Max 1000
+  score: number;
+  correct_count: number;
+  avg_time_ms: number;
+  answers: { round: number; selected_index: number; correct: boolean; time_ms: number }[];
+}
+
+export interface PvPSession {
+  id: string;
+  subject: string;
+  building_id: string;
+  stake_coins: number;
+  is_ranked: boolean;
+  total_rounds: number; // default 5
+  current_round: number;
+  status: 'waiting' | 'in_progress' | 'completed' | 'abandoned';
+  combatants: { [userId: string]: PvPCombatant };
+  questions: MCQuestion[];
+  winner_id?: string | null;
+  is_draw?: boolean;
+  xp_awarded?: number;
+  rating_delta?: { [userId: string]: number };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PvPRoundSubmission {
+  user_id: string;
+  session_id: string;
+  round_index: number;
+  selected_index: number;
+  time_taken_ms: number;
+}
+
+export interface PvPStats {
+  user_id: string;
+  name: string;
+  rating: number;
+  tier: PvPTier;
+  wins: number;
+  losses: number;
+  draws: number;
+  total_matches: number;
+  win_rate: number;
+  current_streak: number;
+  best_streak: number;
+  total_coins_won: number;
+  favorite_subject: string;
+}
+
