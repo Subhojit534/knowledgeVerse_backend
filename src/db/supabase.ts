@@ -2089,6 +2089,24 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
   const profileName = (profile.name || '').trim().toLowerCase();
   const profileId = (profile.id || '').trim().toLowerCase();
 
+  // 1. Sync from Supabase duels table if available
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('duels')
+        .select('*')
+        .in('status', ['pending', 'active'])
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (!error && data) {
+        for (const row of data) {
+          memoryDuels.set(row.id, row as DuelChallengeData);
+        }
+      }
+    } catch (_) {}
+  }
+
   const received: any[] = [];
   const sent: any[] = [];
 
@@ -2159,14 +2177,55 @@ export async function respondToPvPChallenge(
   accept: boolean,
   questions: MCQuestion[] = []
 ): Promise<{ success: boolean; session?: PvPSession }> {
-  const duel = memoryDuels.get(challengeId);
+  let duel = memoryDuels.get(challengeId);
+
+  // 1. Fetch from Supabase if not in memory (handles serverless cold starts)
+  if (!duel && supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('duels')
+        .select('*')
+        .eq('id', challengeId)
+        .maybeSingle();
+
+      if (!error && data) {
+        duel = data as DuelChallengeData;
+        memoryDuels.set(challengeId, duel);
+      }
+    } catch (_) {}
+  }
+
+  // 2. Fuzzy search in memory
   if (!duel) {
+    for (const d of memoryDuels.values()) {
+      if (d.id === challengeId || String(d.id).toLowerCase() === String(challengeId).toLowerCase()) {
+        duel = d;
+        break;
+      }
+    }
+  }
+
+  if (!duel) {
+    console.warn(`⚠️ [PvP Respond]: Duel challenge ${challengeId} not found`);
     return { success: false };
+  }
+
+  // 3. If already accepted and active, return existing session
+  if (duel.status === 'active' && duel.session_id) {
+    const existing = memoryPvPSessions.get(duel.session_id);
+    if (existing) {
+      return { success: true, session: existing };
+    }
   }
 
   duel.status = accept ? 'active' : 'declined';
 
   if (!accept) {
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('duels').update({ status: 'declined' }).eq('id', duel.id);
+      } catch (_) {}
+    }
     return { success: true };
   }
 
@@ -2181,7 +2240,7 @@ export async function respondToPvPChallenge(
 
   const p1: PvPCombatant = {
     id: p1Id,
-    name: challenger.name,
+    name: challenger.name || 'Challenger',
     title: challenger.learning_goal || 'Challenger Scholar',
     avatar_initial: challenger.name ? challenger.name.charAt(0).toUpperCase() : 'C',
     avatar_color: '#60A5FA',
@@ -2199,7 +2258,7 @@ export async function respondToPvPChallenge(
 
   const p2: PvPCombatant = {
     id: p2Id,
-    name: challenged.name,
+    name: challenged.name || 'Defender',
     title: challenged.learning_goal || 'Defender Scholar',
     avatar_initial: challenged.name ? challenged.name.charAt(0).toUpperCase() : 'D',
     avatar_color: '#F2CA50',
@@ -2247,8 +2306,19 @@ export async function respondToPvPChallenge(
   duel.session_id = sessionId;
   duel.status = 'active';
 
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('duels').update({
+        status: 'active',
+        session_id: sessionId,
+      }).eq('id', duel.id);
+    } catch (_) {}
+  }
+
+  console.log(`⚔️ [PvP Challenge Accepted]: Created Live Duel Match (${p1.name} vs ${p2.name}) in session ${sessionId}`);
   return { success: true, session };
 }
+
 
 // ============================================================================
 // PVP PRIVATE ROOM / MANUAL DUEL ENGINE
