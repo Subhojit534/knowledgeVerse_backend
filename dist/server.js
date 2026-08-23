@@ -9,6 +9,7 @@ import { shopRouter } from './routes/shop.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
 import { socialRouter } from './routes/social.js';
 import { guildsRouter } from './routes/guilds.js';
+import { pvpRouter } from './routes/pvp.js';
 const app = express();
 const PORT = parseInt(env.PORT, 10) || 8000;
 // Middlewares
@@ -47,6 +48,7 @@ app.use('/api/shop', shopRouter);
 app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/guilds', guildsRouter);
+app.use('/api/pvp', pvpRouter);
 // Global Error Handler
 app.use((err, req, res, next) => {
     console.error('❌ [Server Error]:', err);

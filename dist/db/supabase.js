@@ -40,6 +40,9 @@ const memoryGuildMembers = new Map();
 const memoryGuildMessages = new Map();
 const memoryFriendships = new Map();
 const memoryDuels = new Map();
+const memoryPvPSessions = new Map();
+const memoryPvPStats = new Map();
+const memoryMatchmakingQueue = [];
 // In-memory profiles (populated dynamically from user logins / DB)
 const demo1Uuid = ensureUuid('demo-user-123');
 // Seed initial Shop Catalog
@@ -1239,4 +1242,502 @@ export async function createDuelChallenge(challengerId, challengedId, buildingId
         }
     }
     return duel;
+}
+// ============================================================================
+// PVP DUEL ARENA ENGINE & PERSISTENCE
+// ============================================================================
+export function calculatePvPTier(rating) {
+    if (rating >= 1900)
+        return 'Grand Archmage';
+    if (rating >= 1700)
+        return 'Diamond Arcanist';
+    if (rating >= 1500)
+        return 'Platinum Sorcerer';
+    if (rating >= 1300)
+        return 'Gold Mage';
+    if (rating >= 1100)
+        return 'Silver Adept';
+    return 'Bronze Scholar';
+}
+export async function getUserPvPStats(userId) {
+    const validId = ensureUuid(userId);
+    const profile = await getProfile(validId);
+    // 1. Check in-memory store
+    let stats = memoryPvPStats.get(validId);
+    if (stats)
+        return stats;
+    // 2. Check Supabase
+    if (supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('pvp_stats')
+                .select('*')
+                .eq('user_id', validId)
+                .maybeSingle();
+            if (!error && data) {
+                stats = {
+                    user_id: data.user_id,
+                    name: data.name || profile.name,
+                    rating: data.rating || 1200,
+                    tier: calculatePvPTier(data.rating || 1200),
+                    wins: data.wins || 0,
+                    losses: data.losses || 0,
+                    draws: data.draws || 0,
+                    total_matches: data.total_matches || 0,
+                    win_rate: data.win_rate || 0,
+                    current_streak: data.current_streak || 0,
+                    best_streak: data.best_streak || 0,
+                    total_coins_won: data.total_coins_won || 0,
+                    favorite_subject: data.favorite_subject || (profile.subjects?.[0] || 'Computer Science'),
+                };
+                memoryPvPStats.set(validId, stats);
+                return stats;
+            }
+        }
+        catch (_) { }
+    }
+    // Default initial PvP stats
+    const initialStats = {
+        user_id: validId,
+        name: profile.name || 'Scholar Duelist',
+        rating: 1200,
+        tier: 'Silver Adept',
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        total_matches: 0,
+        win_rate: 0.0,
+        current_streak: 0,
+        best_streak: 0,
+        total_coins_won: 0,
+        favorite_subject: profile.subjects?.[0] || 'Mathematics',
+    };
+    memoryPvPStats.set(validId, initialStats);
+    return initialStats;
+}
+export async function saveUserPvPStats(stats) {
+    stats.tier = calculatePvPTier(stats.rating);
+    stats.total_matches = stats.wins + stats.losses + stats.draws;
+    stats.win_rate = stats.total_matches > 0 ? Number(((stats.wins / stats.total_matches) * 100).toFixed(1)) : 0;
+    memoryPvPStats.set(stats.user_id, stats);
+    if (supabaseClient) {
+        try {
+            await supabaseClient.from('pvp_stats').upsert({
+                user_id: stats.user_id,
+                name: stats.name,
+                rating: stats.rating,
+                tier: stats.tier,
+                wins: stats.wins,
+                losses: stats.losses,
+                draws: stats.draws,
+                total_matches: stats.total_matches,
+                win_rate: stats.win_rate,
+                current_streak: stats.current_streak,
+                best_streak: stats.best_streak,
+                total_coins_won: stats.total_coins_won,
+                favorite_subject: stats.favorite_subject,
+                updated_at: new Date().toISOString(),
+            });
+        }
+        catch (err) {
+            console.warn('⚠️ [Supabase Save PvP Stats Error]:', err);
+        }
+    }
+    return stats;
+}
+const AI_SCHOLAR_POOL = [
+    { name: 'Archmage Ada', title: 'Algorithm Prodigy', color: '#60A5FA', initial: 'A' },
+    { name: 'Pythagoras AI', title: 'Geometric Warden', color: '#F2CA50', initial: 'P' },
+    { name: 'Scholar Newton', title: 'Kinetic Chancellor', color: '#82C0A0', initial: 'N' },
+    { name: 'Alchemist Curie', title: 'Radiant Synthesizer', color: '#DEB7FF', initial: 'C' },
+    { name: 'Sentinel Turing', title: 'Logic Cryptographer', color: '#F38BA8', initial: 'T' },
+    { name: 'Archivist Aristotle', title: 'Omniscient Chronicler', color: '#FAB387', initial: 'K' },
+];
+export function createAiOpponent(subject, playerRating) {
+    const template = AI_SCHOLAR_POOL[Math.floor(Math.random() * AI_SCHOLAR_POOL.length)];
+    const ratingDelta = Math.floor(Math.random() * 80) - 40;
+    const rating = Math.max(900, playerRating + ratingDelta);
+    return {
+        id: `ai-bot-${crypto.randomUUID().substring(0, 8)}`,
+        name: template.name,
+        title: template.title,
+        avatar_initial: template.initial,
+        avatar_color: template.color,
+        avatar_index: Math.floor(Math.random() * 8),
+        level: Math.max(1, Math.floor(rating / 300)),
+        rating: rating,
+        tier: calculatePvPTier(rating),
+        is_bot: true,
+        hp: 1000,
+        score: 0,
+        correct_count: 0,
+        avg_time_ms: 3800,
+        answers: [],
+    };
+}
+export async function matchmakePvP(userId, subject, stakeCoins = 50, isRanked = true, questions = []) {
+    const validId = ensureUuid(userId);
+    const profile = await getProfile(validId);
+    const userStats = await getUserPvPStats(validId);
+    // Check if player has sufficient coins for stake
+    if (stakeCoins > 0 && (profile.coins || 0) < stakeCoins) {
+        throw new Error(`Insufficient coins to enter duel! You need ${stakeCoins} coins.`);
+    }
+    // 1. Check if another human player is currently queued
+    const queueIdx = memoryMatchmakingQueue.findIndex((q) => q.userId !== validId && (q.subject === 'Omni-Duel' || subject === 'Omni-Duel' || q.subject.toLowerCase() === subject.toLowerCase()));
+    let opponentCombatant;
+    let matchedWithAI = false;
+    if (queueIdx >= 0) {
+        const queuedOpponent = memoryMatchmakingQueue.splice(queueIdx, 1)[0];
+        const opponentStats = await getUserPvPStats(queuedOpponent.userId);
+        opponentCombatant = {
+            id: queuedOpponent.userId,
+            name: queuedOpponent.profile.name,
+            title: queuedOpponent.profile.learning_goal || 'Academy Duelist',
+            avatar_initial: queuedOpponent.profile.name ? queuedOpponent.profile.name.charAt(0).toUpperCase() : 'E',
+            avatar_color: '#DEB7FF',
+            avatar_index: queuedOpponent.profile.avatar_index || 0,
+            level: queuedOpponent.profile.level || 1,
+            rating: opponentStats.rating,
+            tier: opponentStats.tier,
+            is_bot: false,
+            hp: 1000,
+            score: 0,
+            correct_count: 0,
+            avg_time_ms: 0,
+            answers: [],
+        };
+    }
+    else {
+        // Pair with AI Scholar for instant zero-latency match
+        opponentCombatant = createAiOpponent(subject, userStats.rating);
+        matchedWithAI = true;
+    }
+    const playerCombatant = {
+        id: validId,
+        name: profile.name,
+        title: profile.learning_goal || 'Master Scholar',
+        avatar_initial: profile.name ? profile.name.charAt(0).toUpperCase() : 'W',
+        avatar_color: '#F2CA50',
+        avatar_index: profile.avatar_index || 0,
+        level: profile.level || 1,
+        rating: userStats.rating,
+        tier: userStats.tier,
+        is_bot: false,
+        hp: 1000,
+        score: 0,
+        correct_count: 0,
+        avg_time_ms: 0,
+        answers: [],
+    };
+    const sessionId = crypto.randomUUID();
+    const session = {
+        id: sessionId,
+        subject: subject,
+        building_id: 'arena',
+        stake_coins: stakeCoins,
+        is_ranked: isRanked,
+        total_rounds: questions.length || 5,
+        current_round: 0,
+        status: 'in_progress',
+        combatants: {
+            [playerCombatant.id]: playerCombatant,
+            [opponentCombatant.id]: opponentCombatant,
+        },
+        questions: questions,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+    };
+    memoryPvPSessions.set(sessionId, session);
+    return { session, matchedWithAI };
+}
+export function getPvPSession(sessionId) {
+    return memoryPvPSessions.get(sessionId) || null;
+}
+export async function submitPvPRound(submission) {
+    const session = memoryPvPSessions.get(submission.session_id);
+    if (!session) {
+        throw new Error('PvP Session not found');
+    }
+    const combatant = session.combatants[submission.user_id];
+    if (!combatant) {
+        throw new Error('Combatant not found in session');
+    }
+    const opponentId = Object.keys(session.combatants).find((k) => k !== submission.user_id);
+    const opponent = opponentId ? session.combatants[opponentId] : null;
+    const currentQ = session.questions[submission.round_index] || session.questions[0];
+    const isCorrect = submission.selected_index === currentQ.correct_index;
+    // Calculate score and damage based on speed
+    // Max score per question = 300, min = 100 for correct answer
+    const speedBonus = Math.max(0, 200 - Math.floor(submission.time_taken_ms / 60));
+    const scoreAwarded = isCorrect ? 100 + speedBonus : 0;
+    const damageDealt = isCorrect ? 180 + Math.floor(speedBonus * 0.4) : 0;
+    combatant.score += scoreAwarded;
+    if (isCorrect)
+        combatant.correct_count += 1;
+    combatant.answers.push({
+        round: submission.round_index,
+        selected_index: submission.selected_index,
+        correct: isCorrect,
+        time_ms: submission.time_taken_ms,
+    });
+    // Apply damage to opponent
+    if (opponent && damageDealt > 0) {
+        opponent.hp = Math.max(0, opponent.hp - damageDealt);
+    }
+    // If opponent is an AI bot, simulate their answer
+    let oppDamage = 0;
+    let oppScore = 0;
+    let oppCorrect = false;
+    if (opponent && opponent.is_bot) {
+        // 78% accuracy for bot
+        oppCorrect = Math.random() < 0.78;
+        const botTime = Math.floor(Math.random() * 3500) + 2200;
+        const botSpeedBonus = Math.max(0, 200 - Math.floor(botTime / 60));
+        oppScore = oppCorrect ? 100 + botSpeedBonus : 0;
+        oppDamage = oppCorrect ? 180 + Math.floor(botSpeedBonus * 0.4) : 0;
+        opponent.score += oppScore;
+        if (oppCorrect)
+            opponent.correct_count += 1;
+        opponent.answers.push({
+            round: submission.round_index,
+            selected_index: oppCorrect ? currentQ.correct_index : (currentQ.correct_index + 1) % 4,
+            correct: oppCorrect,
+            time_ms: botTime,
+        });
+        if (oppDamage > 0) {
+            combatant.hp = Math.max(0, combatant.hp - oppDamage);
+        }
+    }
+    session.current_round = submission.round_index + 1;
+    session.updated_at = new Date().toISOString();
+    return {
+        session,
+        roundResult: {
+            round: submission.round_index,
+            user_id: submission.user_id,
+            is_correct: isCorrect,
+            damage_dealt: damageDealt,
+            score_awarded: scoreAwarded,
+            opponent_damage_dealt: oppDamage,
+            opponent_is_correct: oppCorrect,
+            opponent_score_awarded: oppScore,
+        },
+    };
+}
+export async function finishPvPSession(sessionId) {
+    const session = memoryPvPSessions.get(sessionId);
+    if (!session) {
+        throw new Error('PvP Session not found');
+    }
+    const combatantIds = Object.keys(session.combatants);
+    if (combatantIds.length < 2) {
+        throw new Error('Session must have 2 combatants');
+    }
+    const p1 = session.combatants[combatantIds[0]];
+    const p2 = session.combatants[combatantIds[1]];
+    let winnerId = null;
+    let isDraw = false;
+    // Determine winner: 1. By Knockout (HP == 0), 2. By higher HP, 3. By higher Score
+    if (p1.hp > 0 && p2.hp === 0) {
+        winnerId = p1.id;
+    }
+    else if (p2.hp > 0 && p1.hp === 0) {
+        winnerId = p2.id;
+    }
+    else if (p1.hp !== p2.hp) {
+        winnerId = p1.hp > p2.hp ? p1.id : p2.id;
+    }
+    else if (p1.score !== p2.score) {
+        winnerId = p1.score > p2.score ? p1.id : p2.id;
+    }
+    else {
+        isDraw = true;
+    }
+    session.status = 'completed';
+    session.winner_id = winnerId;
+    session.is_draw = isDraw;
+    session.updated_at = new Date().toISOString();
+    const rewards = {};
+    const stake = session.stake_coins;
+    for (const cId of combatantIds) {
+        const c = session.combatants[cId];
+        if (c.is_bot)
+            continue;
+        const isWinner = winnerId === cId;
+        const isLoser = winnerId !== null && winnerId !== cId;
+        const coinsDelta = isWinner ? stake : isLoser ? -stake : 0;
+        const ratingDelta = isWinner ? (Math.floor(Math.random() * 8) + 28) : isLoser ? -(Math.floor(Math.random() * 6) + 16) : 5;
+        const xpEarned = isWinner ? 120 : isLoser ? 45 : 75;
+        // Update Player Profile
+        const profile = await getProfile(cId);
+        profile.coins = Math.max(0, (profile.coins || 0) + coinsDelta);
+        profile.xp = (profile.xp || 0) + xpEarned;
+        profile.level = Math.floor((profile.xp || 0) / 300) + 1;
+        await saveProfile(profile);
+        // Update PvP Stats
+        const stats = await getUserPvPStats(cId);
+        if (isWinner) {
+            stats.wins += 1;
+            stats.current_streak += 1;
+            if (stats.current_streak > stats.best_streak)
+                stats.best_streak = stats.current_streak;
+            stats.total_coins_won += stake;
+        }
+        else if (isLoser) {
+            stats.losses += 1;
+            stats.current_streak = 0;
+        }
+        else {
+            stats.draws += 1;
+        }
+        stats.rating = Math.max(400, stats.rating + ratingDelta);
+        stats.favorite_subject = session.subject;
+        await saveUserPvPStats(stats);
+        rewards[cId] = {
+            coinsDelta,
+            xpEarned,
+            ratingDelta,
+            newRating: stats.rating,
+            newCoins: profile.coins,
+            newXp: profile.xp,
+        };
+    }
+    return {
+        session,
+        winnerId,
+        isDraw,
+        rewards,
+    };
+}
+export async function getPvPLeaderboard() {
+    // Merge in-memory stats with any demo/all profiles
+    const allProfiles = await getAllProfiles();
+    for (const p of allProfiles) {
+        const pId = p.id || ensureUuid(p.name);
+        if (!memoryPvPStats.has(pId)) {
+            const baseRating = 1100 + (p.level || 1) * 65;
+            memoryPvPStats.set(pId, {
+                user_id: pId,
+                name: p.name,
+                rating: baseRating,
+                tier: calculatePvPTier(baseRating),
+                wins: Math.floor((p.xp || 100) / 120),
+                losses: Math.floor((p.xp || 100) / 350),
+                draws: 1,
+                total_matches: Math.floor((p.xp || 100) / 100),
+                win_rate: 72.5,
+                current_streak: p.streak_days || 3,
+                best_streak: (p.streak_days || 3) + 2,
+                total_coins_won: (p.coins || 500),
+                favorite_subject: p.subjects?.[0] || 'Mathematics',
+            });
+        }
+    }
+    const list = Array.from(memoryPvPStats.values());
+    list.sort((a, b) => b.rating - a.rating);
+    return list.slice(0, 30);
+}
+export async function getPendingPvPChallenges(userId) {
+    const validId = ensureUuid(userId);
+    const received = [];
+    const sent = [];
+    for (const d of memoryDuels.values()) {
+        if (d.status === 'pending') {
+            if (d.challenged_id === validId) {
+                const challenger = await getProfile(d.challenger_id);
+                received.push({
+                    id: d.id,
+                    challengerId: d.challenger_id,
+                    challengerName: challenger.name,
+                    subject: d.subject,
+                    stakeCoins: d.stake_coins,
+                    createdAt: d.created_at,
+                });
+            }
+            else if (d.challenger_id === validId) {
+                const challenged = await getProfile(d.challenged_id);
+                sent.push({
+                    id: d.id,
+                    challengedId: d.challenged_id,
+                    challengedName: challenged.name,
+                    subject: d.subject,
+                    stakeCoins: d.stake_coins,
+                    createdAt: d.created_at,
+                });
+            }
+        }
+    }
+    return { received, sent };
+}
+export async function respondToPvPChallenge(challengeId, accept, questions = []) {
+    const duel = memoryDuels.get(challengeId);
+    if (!duel) {
+        return { success: false };
+    }
+    duel.status = accept ? 'active' : 'declined';
+    if (!accept) {
+        return { success: true };
+    }
+    // Create match session between the two human players
+    const challenger = await getProfile(duel.challenger_id);
+    const challenged = await getProfile(duel.challenged_id);
+    const cStats = await getUserPvPStats(duel.challenger_id);
+    const tStats = await getUserPvPStats(duel.challenged_id);
+    const p1Id = challenger.id || ensureUuid(duel.challenger_id);
+    const p2Id = challenged.id || ensureUuid(duel.challenged_id);
+    const p1 = {
+        id: p1Id,
+        name: challenger.name,
+        title: challenger.learning_goal || 'Challenger Scholar',
+        avatar_initial: challenger.name ? challenger.name.charAt(0).toUpperCase() : 'C',
+        avatar_color: '#60A5FA',
+        avatar_index: challenger.avatar_index || 0,
+        level: challenger.level || 1,
+        rating: cStats.rating,
+        tier: cStats.tier,
+        is_bot: false,
+        hp: 1000,
+        score: 0,
+        correct_count: 0,
+        avg_time_ms: 0,
+        answers: [],
+    };
+    const p2 = {
+        id: p2Id,
+        name: challenged.name,
+        title: challenged.learning_goal || 'Defender Scholar',
+        avatar_initial: challenged.name ? challenged.name.charAt(0).toUpperCase() : 'D',
+        avatar_color: '#F2CA50',
+        avatar_index: challenged.avatar_index || 0,
+        level: challenged.level || 1,
+        rating: tStats.rating,
+        tier: tStats.tier,
+        is_bot: false,
+        hp: 1000,
+        score: 0,
+        correct_count: 0,
+        avg_time_ms: 0,
+        answers: [],
+    };
+    const sessionId = crypto.randomUUID();
+    const session = {
+        id: sessionId,
+        subject: duel.subject,
+        building_id: duel.building_id || 'arena',
+        stake_coins: duel.stake_coins,
+        is_ranked: true,
+        total_rounds: questions.length || 5,
+        current_round: 0,
+        status: 'in_progress',
+        combatants: {
+            [p1.id]: p1,
+            [p2.id]: p2,
+        },
+        questions,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+    };
+    memoryPvPSessions.set(sessionId, session);
+    return { success: true, session };
 }
