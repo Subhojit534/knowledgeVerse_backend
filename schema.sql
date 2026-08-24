@@ -1,5 +1,5 @@
 -- ============================================================================
--- HEXAFALLS / KNOWLEDGEVERSE - COMPREHENSIVE SUPABASE POSTGRESQL SCHEMA
+-- KNOWLEDGEVERSE - COMPREHENSIVE SUPABASE POSTGRESQL SCHEMA
 -- ============================================================================
 
 -- Enable UUID extension

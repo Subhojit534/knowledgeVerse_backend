@@ -29,7 +29,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.get('/', (req: Request, res: Response) => {
   res.json({
     status: 'online',
-    app: 'Hexafalls KnowledgeVerse Backend',
+    app: 'KnowledgeVerse Backend',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     documentation: `http://127.0.0.1:${PORT}/api/health`,
@@ -72,7 +72,7 @@ export default app;
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
-    console.log(`🚀 Hexafalls Supabase Node.js Backend is live on port ${PORT}`);
+    console.log(`🚀 KnowledgeVerse Supabase Node.js Backend is live on port ${PORT}`);
     console.log(`🔗 Local URL: http://127.0.0.1:${PORT}`);
     console.log(`💚 Health Check: http://127.0.0.1:${PORT}/api/health`);
     console.log(`=======================================================`);

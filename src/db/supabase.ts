@@ -315,7 +315,7 @@ const guild2: GuildData = {
   id: g2Uuid,
   name: 'Cyber Wizards',
   tag: 'CYB',
-  motto: 'Coding the Future of Hexafalls',
+  motto: 'Coding the Future of KnowledgeVerse',
   member_count: 18,
   max_members: 20,
   level: 8,
