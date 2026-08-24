@@ -38,7 +38,7 @@ async function handleIntro(req, res) {
         const subjectsList = updatedProfile.subjects || requestedSubjects;
         const theme = updatedProfile.world_theme || 'Green Highlands';
         const subjectsStr = subjectsList.join(', ');
-        const narration = `${name} — the magic realm of Hexafalls awaits you! Tonight the grand lanterns are lit across ${theme}. You are enrolled to master ${subjectsStr}. Every lesson you complete lays another stone for your academy. Step inside — your adventure begins now!`;
+        const narration = `${name} — the magic realm of KnowledgeVerse awaits you! Tonight the grand lanterns are lit across ${theme}. You are enrolled to master ${subjectsStr}. Every lesson you complete lays another stone for your academy. Step inside — your adventure begins now!`;
         res.json({
             success: true,
             message: 'Onboarding profile saved successfully',

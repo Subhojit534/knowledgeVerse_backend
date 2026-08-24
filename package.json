@@ -1,7 +1,7 @@
 {
-  "name": "hexafalls-backend",
+  "name": "knowledgeverse-backend",
   "version": "1.0.0",
-  "description": "High-performance Node.js & Supabase backend for Hexafalls KnowledgeVerse",
+  "description": "High-performance Node.js & Supabase backend for KnowledgeVerse",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
