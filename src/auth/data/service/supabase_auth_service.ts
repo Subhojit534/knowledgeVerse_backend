@@ -7,12 +7,18 @@ export default class SupabaseAuthService implements IAuthService {
 
 
     public async login(email: string, password: string): Promise<User> {
-        
+        try {
+            const res = await this.client.auth.signInWithPassword({ email: email, password: password })
+            
+        } catch (e) { 
+
+        }
+
     }
-    register(email: string, password: string): Promise<User> {
+    public async register(email: string, password: string): Promise<User> {
         throw new Error("Method not implemented.");
     }
-    updateProfile(): Promise<User> {
+    public async updateProfile(): Promise<User> {
         throw new Error("Method not implemented.");
     }
 }
