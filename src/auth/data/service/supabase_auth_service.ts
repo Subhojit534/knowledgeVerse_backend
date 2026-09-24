@@ -9,9 +9,12 @@ export default class SupabaseAuthService implements IAuthService {
     public async login(email: string, password: string): Promise<User> {
         try {
             const res = await this.client.auth.signInWithPassword({ email: email, password: password })
-            
-        } catch (e) { 
-
+            if (res.error) {
+                return Promise.reject(res.error.message)
+            }
+            return res.data.user
+        } catch (e) {
+            return Promise.reject("")
         }
 
     }
