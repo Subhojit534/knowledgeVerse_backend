@@ -7,11 +7,21 @@ import {
   leaveGuild,
   sendGuildMessage,
   getGuildMessages,
-} from '../db/supabase.js';
+} from '../db/operations.js';
 
 export const guildsRouter = Router();
 
 // Get Public Guilds Directory
+/**
+ * @swagger
+ * /api/guilds:
+ *   get:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.get('/', async (req: Request, res: Response) => {
   try {
     const guilds = await getPublicGuilds();
@@ -26,6 +36,16 @@ guildsRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Get Guild Messages for Live Polling
+/**
+ * @swagger
+ * /api/guilds/messages:
+ *   get:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.get('/messages', async (req: Request, res: Response) => {
   try {
     const guildId = req.query.guildId as string;
@@ -44,6 +64,16 @@ guildsRouter.get('/messages', async (req: Request, res: Response) => {
 });
 
 // Get My Guild Details, Roster & Messages
+/**
+ * @swagger
+ * /api/guilds/my:
+ *   get:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.get('/my', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || 'demo-user-123';
@@ -62,6 +92,21 @@ guildsRouter.get('/my', async (req: Request, res: Response) => {
 });
 
 // Create Guild
+/**
+ * @swagger
+ * /api/guilds/create:
+ *   post:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.post('/create', async (req: Request, res: Response) => {
   try {
     const { leaderId, name, tag, motto } = req.body || {};
@@ -85,6 +130,21 @@ guildsRouter.post('/create', async (req: Request, res: Response) => {
 });
 
 // Join Guild
+/**
+ * @swagger
+ * /api/guilds/join:
+ *   post:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.post('/join', async (req: Request, res: Response) => {
   try {
     const { userId, guildId } = req.body || {};
@@ -110,6 +170,21 @@ guildsRouter.post('/join', async (req: Request, res: Response) => {
 });
 
 // Leave Guild
+/**
+ * @swagger
+ * /api/guilds/leave:
+ *   post:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.post('/leave', async (req: Request, res: Response) => {
   try {
     const { userId, guildId } = req.body || {};
@@ -131,6 +206,21 @@ guildsRouter.post('/leave', async (req: Request, res: Response) => {
 });
 
 // Send Chat Message to Guild
+/**
+ * @swagger
+ * /api/guilds/chat:
+ *   post:
+ *     summary: Endpoint for guilds
+ *     tags: [Guilds]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 guildsRouter.post('/chat', async (req: Request, res: Response) => {
   try {
     const { guildId, senderId, text } = req.body || {};

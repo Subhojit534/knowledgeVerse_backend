@@ -15,11 +15,14 @@ import {
   joinPvPRoom,
   getPvPRoomStatus,
   cancelPvPRoom,
-} from '../db/supabase.js';
+} from '../db/operations.js';
 
 
 import { generateLearningContentWithGroq } from '../services/groq.js';
-import { getQuestionsForBuilding } from '../data/questionsData.js';
+import { drizzleClient as db } from '../db/drizzle_client.js';
+import { question } from '../data/model/question.js';
+import { option } from '../data/model/option.js';
+import { sql, eq } from 'drizzle-orm';
 import { MCQuestion } from '../types/index.js';
 
 export const pvpRouter = Router();
@@ -27,33 +30,46 @@ export const pvpRouter = Router();
 /**
  * Helper to fetch 5 quiz questions for a PvP subject match instantly (no blocking network calls).
  */
-function getPvPQuestions(subject: string, grade: string = 'Class 10', curriculum: string = 'CBSE'): MCQuestion[] {
+async function getPvPQuestions(subject: string, grade: string = 'Class 10', curriculum: string = 'CBSE'): Promise<any[]> {
   try {
-    const fallback = getQuestionsForBuilding('arena', subject);
-    if (fallback && Array.isArray(fallback.questions) && fallback.questions.length > 0) {
-      // Return shuffled 5-question pool for high variability
-      return [...fallback.questions].sort(() => Math.random() - 0.5).slice(0, 5);
+    const randomQuestions = await db.select().from(question).orderBy(sql`RANDOM()`).limit(5);
+    const formattedQuestions = [];
+    for (const q of randomQuestions) {
+      const opts = await db.select().from(option).where(eq(option.question_id, q.id));
+      const correctAnswer = opts.find((o: any) => o.is_correct)?.answer || '';
+      formattedQuestions.push({
+        id: q.id,
+        question: q.question,
+        options: opts.map((o: any) => o.answer),
+        correct_answer: correctAnswer,
+        explanation: 'Keep learning!',
+      });
     }
+    return formattedQuestions as any;
   } catch (err) {
-    console.warn('⚠️ [PvP Questions Fallback Error]:', err);
+    console.error('PvP Question Fetch Error', err);
   }
-
-  // Guaranteed fallback default question
-  return [
-    {
-      id: 1,
-      question: 'Which principle states that energy cannot be created or destroyed, only transformed?',
-      options: ['Law of Conservation of Energy', 'Newton\'s First Law', 'Hooke\'s Law', 'Pascal\'s Principle'],
-      correct_index: 0,
-      explanation: 'The Law of Conservation of Energy states total energy remains constant.',
-    },
-  ];
-
-
+  return [];
 }
 
 
+
 // 1. MATCHMAKING QUEUE / INSTANT AI MATCH (Practice) / REAL DUEL POOL
+/**
+ * @swagger
+ * /api/pvp/matchmake:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
   try {
     const { userId, playerName, subject, stakeCoins, isRanked, grade, curriculum } = req.body || {};
@@ -84,6 +100,21 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
 });
 
 // CANCEL MATCHMAKING QUEUE
+/**
+ * @swagger
+ * /api/pvp/matchmake/cancel:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
   try {
     const { userId } = req.body || {};
@@ -95,6 +126,22 @@ pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
 });
 
 // 2. GET SESSION STATE
+/**
+ * @swagger
+ * /api/pvp/session/{sessionId}:
+ *   get:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.get('/session/:sessionId', async (req: Request, res: Response) => {
   try {
     const sessionId = String(req.params.sessionId);
@@ -112,6 +159,27 @@ pvpRouter.get('/session/:sessionId', async (req: Request, res: Response) => {
 });
 
 // 3. SUBMIT ROUND ANSWER & COMPUTE DAMAGE
+/**
+ * @swagger
+ * /api/pvp/session/{sessionId}/round:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/session/:sessionId/round', async (req: Request, res: Response) => {
   try {
     const sessionId = String(req.params.sessionId);
@@ -141,6 +209,27 @@ pvpRouter.post('/session/:sessionId/round', async (req: Request, res: Response) 
 });
 
 // 4. FINISH PVP SESSION & DISTRIBUTE REWARDS
+/**
+ * @swagger
+ * /api/pvp/session/{sessionId}/finish:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/session/:sessionId/finish', async (req: Request, res: Response) => {
   try {
     const sessionId = String(req.params.sessionId);
@@ -162,6 +251,22 @@ pvpRouter.post('/session/:sessionId/finish', async (req: Request, res: Response)
 });
 
 // 5. GET USER PVP STATS & TIER
+/**
+ * @swagger
+ * /api/pvp/stats/{userId}:
+ *   get:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.get('/stats/:userId', async (req: Request, res: Response) => {
   try {
     const userId = String(req.params.userId || 'demo-user-123');
@@ -176,6 +281,16 @@ pvpRouter.get('/stats/:userId', async (req: Request, res: Response) => {
 
 
 // 6. GET PVP LEADERBOARD
+/**
+ * @swagger
+ * /api/pvp/leaderboard:
+ *   get:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.get('/leaderboard', async (_req: Request, res: Response) => {
   try {
     const leaderboard = await getPvPLeaderboard();
@@ -187,6 +302,16 @@ pvpRouter.get('/leaderboard', async (_req: Request, res: Response) => {
 });
 
 // 7. GET PENDING CHALLENGES
+/**
+ * @swagger
+ * /api/pvp/challenges:
+ *   get:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.get('/challenges', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || 'demo-user-123';
@@ -204,6 +329,21 @@ pvpRouter.get('/challenges', async (req: Request, res: Response) => {
 });
 
 // 8. SEND CHALLENGE TO FRIEND
+/**
+ * @swagger
+ * /api/pvp/challenge:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/challenge', async (req: Request, res: Response) => {
   try {
     const { challengerId, challengedId, subject, stakeCoins, challengerName, challengedName } = req.body || {};
@@ -233,6 +373,21 @@ pvpRouter.post('/challenge', async (req: Request, res: Response) => {
 });
 
 // 9. RESPOND TO CHALLENGE (ACCEPT / DECLINE)
+/**
+ * @swagger
+ * /api/pvp/challenges/respond:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
   try {
     const { challengeId, accept, grade, curriculum, subject } = req.body || {};
@@ -259,6 +414,21 @@ pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
 });
 
 // 9b. CONSUME CHALLENGE (Mark as joined to prevent repeated auto-start loops)
+/**
+ * @swagger
+ * /api/pvp/challenges/consume:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/challenges/consume', async (req: Request, res: Response) => {
   try {
     const { challengeId, sessionId } = req.body || {};
@@ -273,6 +443,21 @@ pvpRouter.post('/challenges/consume', async (req: Request, res: Response) => {
 
 
 // 10. CREATE PRIVATE ROOM CODE
+/**
+ * @swagger
+ * /api/pvp/room/create:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/room/create', async (req: Request, res: Response) => {
   try {
     const { userId, playerName, subject, stakeCoins, grade, curriculum } = req.body || {};
@@ -300,6 +485,21 @@ pvpRouter.post('/room/create', async (req: Request, res: Response) => {
 });
 
 // 11. JOIN PRIVATE ROOM CODE
+/**
+ * @swagger
+ * /api/pvp/room/join:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/room/join', async (req: Request, res: Response) => {
   try {
     const { roomCode, userId, playerName } = req.body || {};
@@ -328,6 +528,22 @@ pvpRouter.post('/room/join', async (req: Request, res: Response) => {
 });
 
 // 12. GET PRIVATE ROOM STATUS
+/**
+ * @swagger
+ * /api/pvp/room/status/{roomCode}:
+ *   get:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     parameters:
+ *       - in: path
+ *         name: roomCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.get('/room/status/:roomCode', async (req: Request, res: Response) => {
   try {
     const roomCode = String(req.params.roomCode);
@@ -340,6 +556,21 @@ pvpRouter.get('/room/status/:roomCode', async (req: Request, res: Response) => {
 });
 
 // 13. CANCEL PRIVATE ROOM
+/**
+ * @swagger
+ * /api/pvp/room/cancel:
+ *   post:
+ *     summary: Endpoint for pvp
+ *     tags: [Pvp]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 pvpRouter.post('/room/cancel', async (req: Request, res: Response) => {
   try {
     const { roomCode, userId } = req.body || {};

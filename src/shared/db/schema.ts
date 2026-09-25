@@ -12,6 +12,8 @@ import * as shop from "../../data/model/shop.js"
 import * as subject from "../../data/model/subject.js"
 import * as subtopic from "../../data/model/subtopic.js"
 import * as user from "../../data/model/user.js"
+import * as inventory from "../../data/model/inventory.js"
+import * as pvp from "../../data/model/pvp.js"
 
 export const schema = {
     ...user,
@@ -28,6 +30,8 @@ export const schema = {
     ...option,
     ...question,
     ...shop,
+    ...inventory,
+    ...pvp,
 }
 
 export * from "../../data/model/building.js"
@@ -44,3 +48,5 @@ export * from "../../data/model/shop.js"
 export * from "../../data/model/subject.js"
 export * from "../../data/model/subtopic.js"
 export * from "../../data/model/user.js"
+export * from "../../data/model/inventory.js"
+export * from "../../data/model/pvp.js"

@@ -1,9 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { getShopCatalog, purchaseShopItem, getProfile } from '../db/supabase.js';
+import { getShopCatalog, purchaseShopItem, getProfile } from '../db/operations.js';
 
 export const shopRouter = Router();
 
 // Get Shop Catalog Items
+/**
+ * @swagger
+ * /api/shop/items:
+ *   get:
+ *     summary: Endpoint for shop
+ *     tags: [Shop]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 shopRouter.get('/items', async (req: Request, res: Response) => {
   try {
     const category = (req.query.category as string) || 'ALL';
@@ -21,6 +31,21 @@ shopRouter.get('/items', async (req: Request, res: Response) => {
 });
 
 // Purchase Shop Item
+/**
+ * @swagger
+ * /api/shop/purchase:
+ *   post:
+ *     summary: Endpoint for shop
+ *     tags: [Shop]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 shopRouter.post('/purchase', async (req: Request, res: Response) => {
   try {
     const { userId, itemId, shopItemId } = req.body || {};

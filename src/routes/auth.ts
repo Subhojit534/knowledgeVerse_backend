@@ -1,9 +1,24 @@
 import { Router, Request, Response } from 'express';
-import { authenticateUser, isUsernameTaken, saveProfile } from '../db/supabase.js';
+import { authenticateUser, isUsernameTaken, saveProfile } from '../db/operations.js';
 
 export const authRouter = Router();
 
 // Register Endpoint
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Endpoint for auth
+ *     tags: [Auth]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 authRouter.post('/register', async (req: Request, res: Response) => {
   try {
     const { name, password, grade, curriculum, difficulty, world_theme, learning_goal, subjects } = req.body || {};
@@ -57,9 +72,24 @@ authRouter.post('/register', async (req: Request, res: Response) => {
 });
 
 // Login Endpoint
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Endpoint for auth
+ *     tags: [Auth]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 authRouter.post('/login', async (req: Request, res: Response) => {
   try {
-    const { name, username, password } = req.body || {};
+    const { name, username, password, email } = req.body || {};
     const inputName = (name || username || '').trim();
 
     if (!inputName || !password) {
@@ -69,7 +99,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    const profile = await authenticateUser(inputName, password);
+    const profile = await authenticateUser(inputName, password, { email: email });
     if (!profile) {
       return res.status(401).json({
         success: false,

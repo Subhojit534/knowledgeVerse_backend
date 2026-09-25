@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getAllProfiles, getPublicGuilds, computeLevel } from '../db/supabase.js';
+import { getAllProfiles, getPublicGuilds, computeLevel } from '../db/operations.js';
 
 export const leaderboardRouter = Router();
 
@@ -52,7 +52,7 @@ async function buildLeaderboard(category: string = 'GLOBAL') {
   // 2. SUBJECT-SPECIFIC LEADERBOARD (Math, Physics, Chemistry, Biology, History, CS)
   if (canonicalSubject) {
     const subjectScored = rawProfiles.map((p) => {
-      const studiesSubject = p.subjects?.some((s) => s.toLowerCase().includes(canonicalSubject.toLowerCase())) ?? false;
+      const studiesSubject = p.subjects?.some((s: string) => s.toLowerCase().includes(canonicalSubject.toLowerCase())) ?? false;
       const baseSubjectXp = studiesSubject
         ? Math.round((p.xp || 150) * 1.0)
         : Math.round((p.xp || 150) * 0.45);
@@ -121,6 +121,16 @@ async function buildLeaderboard(category: string = 'GLOBAL') {
 }
 
 // Global Leaderboard Rankings
+/**
+ * @swagger
+ * /api/leaderboard:
+ *   get:
+ *     summary: Endpoint for leaderboard
+ *     tags: [Leaderboard]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 leaderboardRouter.get('/', async (req: Request, res: Response) => {
   try {
     const category = (req.query.category as string) || 'GLOBAL';
@@ -138,6 +148,22 @@ leaderboardRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Category-specific Leaderboard Endpoint
+/**
+ * @swagger
+ * /api/leaderboard/category/{category}:
+ *   get:
+ *     summary: Endpoint for leaderboard
+ *     tags: [Leaderboard]
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 leaderboardRouter.get('/category/:category', async (req: Request, res: Response) => {
   try {
     const rawCategory = req.params.category;

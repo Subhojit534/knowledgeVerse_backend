@@ -1,9 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { getUserInventory, equipInventoryItem, getProfile, saveProfile } from '../db/supabase.js';
+import { getUserInventory, equipInventoryItem, getProfile, saveProfile } from '../db/operations.js';
 
 export const inventoryRouter = Router();
 
 // Get Player Inventory & Equipped Items
+/**
+ * @swagger
+ * /api/inventory:
+ *   get:
+ *     summary: Endpoint for inventory
+ *     tags: [Inventory]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 inventoryRouter.get('/', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || 'demo-user-123';
@@ -30,6 +40,21 @@ inventoryRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // Equip Item
+/**
+ * @swagger
+ * /api/inventory/equip:
+ *   post:
+ *     summary: Endpoint for inventory
+ *     tags: [Inventory]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 inventoryRouter.post('/equip', async (req: Request, res: Response) => {
   try {
     const { userId, itemId } = req.body || {};
@@ -58,6 +83,21 @@ inventoryRouter.post('/equip', async (req: Request, res: Response) => {
 });
 
 // Consume / Use Potion or Consumable Item
+/**
+ * @swagger
+ * /api/inventory/use:
+ *   post:
+ *     summary: Endpoint for inventory
+ *     tags: [Inventory]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 inventoryRouter.post('/use', async (req: Request, res: Response) => {
   try {
     const { userId, itemId } = req.body || {};

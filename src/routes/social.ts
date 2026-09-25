@@ -6,11 +6,21 @@ import {
   getFriendsData,
   getUserGuild,
   getPublicGuilds,
-} from '../db/supabase.js';
+} from '../db/operations.js';
 
 export const socialRouter = Router();
 
 // Fast Unified Social Dashboard (Single-hop parallel load < 0.3s)
+/**
+ * @swagger
+ * /api/social/dashboard:
+ *   get:
+ *     summary: Endpoint for social
+ *     tags: [Social]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 socialRouter.get('/dashboard', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || 'demo-user-123';
@@ -40,6 +50,16 @@ socialRouter.get('/dashboard', async (req: Request, res: Response) => {
 });
 
 // Get Friends, Pending Requests & Explorers List
+/**
+ * @swagger
+ * /api/social/friends:
+ *   get:
+ *     summary: Endpoint for social
+ *     tags: [Social]
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 socialRouter.get('/friends', async (req: Request, res: Response) => {
   try {
     const userId = (req.query.userId as string) || 'demo-user-123';
@@ -59,6 +79,21 @@ socialRouter.get('/friends', async (req: Request, res: Response) => {
 });
 
 // Send Friend Request
+/**
+ * @swagger
+ * /api/social/friends/request:
+ *   post:
+ *     summary: Endpoint for social
+ *     tags: [Social]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 socialRouter.post('/friends/request', async (req: Request, res: Response) => {
   try {
     const { requesterId, addresseeId } = req.body || {};
@@ -82,6 +117,21 @@ socialRouter.post('/friends/request', async (req: Request, res: Response) => {
 });
 
 // Respond to Friend Request (Accept / Reject)
+/**
+ * @swagger
+ * /api/social/friends/respond:
+ *   post:
+ *     summary: Endpoint for social
+ *     tags: [Social]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 socialRouter.post('/friends/respond', async (req: Request, res: Response) => {
   try {
     const { friendshipId, accept } = req.body || {};
@@ -102,6 +152,21 @@ socialRouter.post('/friends/respond', async (req: Request, res: Response) => {
 });
 
 // Challenge Friend to a Quiz Duel
+/**
+ * @swagger
+ * /api/social/duel/challenge:
+ *   post:
+ *     summary: Endpoint for social
+ *     tags: [Social]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Successful response
+ */
 socialRouter.post('/duel/challenge', async (req: Request, res: Response) => {
   try {
     const { challengerId, challengedId, buildingId, subject, stakeCoins } = req.body || {};

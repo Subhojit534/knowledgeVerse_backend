@@ -6,7 +6,7 @@ export const currency_type = pgEnum("currency_type", ["GEMS", "COINS"])
 
 
 export const shop = pgTable("shop", {
-    id: uuid().primaryKey().defaultRandom().notNull().unique(),
+    id: uuid().primaryKey().defaultRandom().notNull(),
     category: text(),
     rarity: shopCategory().notNull().default("COMMON"),
     rarity_color: varchar({ length: 8 }).notNull().default("#418b32"),

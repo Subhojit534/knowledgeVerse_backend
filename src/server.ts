@@ -10,8 +10,11 @@ import { leaderboardRouter } from './routes/leaderboard.js';
 import { socialRouter } from './routes/social.js';
 import { guildsRouter } from './routes/guilds.js';
 import { pvpRouter } from './routes/pvp.js';
+import { setupSwagger } from './swagger.js';
+import morgan from "morgan"
 
 const app = express();
+setupSwagger(app);
 const PORT = parseInt(env.PORT, 10) || 8000;
 
 // Middlewares
@@ -20,10 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request Logger Middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`🌐 [${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+app.use(morgan("dev"));
 
 // Health Checks
 app.get('/', (req: Request, res: Response) => {
