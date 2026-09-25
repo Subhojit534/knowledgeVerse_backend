@@ -37,7 +37,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 5 & 6)
 -- ----------------------------------------------------------------------------
-INSERT INTO topics (id, subject_id, name, description, difficulty) VALUES
+INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   ('b0000005-0001-0000-0000-000000000001', 'a0000005-0001-0000-0000-000000000001', 'Numbers & Fractions', 'Place value, large numbers, and fractional operations', 'Easy'),
   ('b0000005-0001-0000-0000-000000000002', 'a0000005-0001-0000-0000-000000000001', 'Shapes, Area & Perimeter', 'Geometric angles, 2D shapes, and perimeter calculation', 'Medium'),
   ('b0000005-0002-0000-0000-000000000003', 'a0000005-0002-0000-0000-000000000002', 'Plant Life & Adaptation', 'Germination, photosynthesis, and habitats', 'Easy'),
@@ -59,7 +59,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 5 & 6)
 -- ----------------------------------------------------------------------------
-INSERT INTO subtopics (id, topic_id, name, description, difficulty) VALUES
+INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000005-0001-0000-0000-000000000001', 'b0000005-0001-0000-0000-000000000001', 'Place Value & Operations', 'Indian & international place value, rounding off', 'Easy'),
   ('c0000005-0001-0000-0000-000000000002', 'b0000005-0001-0000-0000-000000000001', 'Fraction Operations', 'Like/unlike fractions, addition, mixed numbers', 'Medium'),
   ('c0000005-0001-0000-0000-000000000003', 'b0000005-0001-0000-0000-000000000002', 'Geometric Angles', 'Classification of acute, right, obtuse angles', 'Easy'),
@@ -101,10 +101,13 @@ INSERT INTO subtopics (id, topic_id, name, description, difficulty) VALUES
   ('c0000006-0004-0000-0000-000000000032', 'b0000006-0004-0000-0000-000000000016', 'Direct to Indirect Speech', 'Reporting statements, tense backshift basics', 'Hard')
 ON CONFLICT (id) DO NOTHING;
 
+
+
+
 -- ----------------------------------------------------------------------------
 -- QUESTIONS 1 - 50 (CLASS 5)
 -- ----------------------------------------------------------------------------
-INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALUES
+INSERT INTO question (id, question, subtopic_id, difficulty,question_type) VALUES
   ('d0000000-0000-0000-0000-000000000001', 'What is the place value of the digit 7 in the number 5,74,320?', 'c0000005-0001-0000-0000-000000000001', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000002', 'Which number represents five million twenty-four thousand in standard notation?', 'c0000005-0001-0000-0000-000000000001', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000003', 'Write the successor of 99,999 in numeric digits.', 'c0000005-0001-0000-0000-000000000001', 'Easy', 'SAQ'),
@@ -224,7 +227,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 1 - 100
 -- ----------------------------------------------------------------------------
-INSERT INTO options (question_id, answer, is_correct) VALUES
+INSERT INTO option (question_id, answer, is_correct) VALUES
   -- Q1
   ('d0000000-0000-0000-0000-000000000001', '70,000', true),
   ('d0000000-0000-0000-0000-000000000001', '7,000', false),
