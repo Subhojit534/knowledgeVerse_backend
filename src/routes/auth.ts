@@ -33,7 +33,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       world_theme: world_theme || 'Green Highlands',
       learning_goal: learning_goal || 'Master all academic domains',
       subjects: Array.isArray(subjects) && subjects.length > 0 ? subjects : ['Mathematics', 'Computer Science'],
-      avatar_index: 0,
+      avatar_id: 0,
       xp: 150,
       level: 1,
       coins: 500,

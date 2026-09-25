@@ -1,24 +1,34 @@
+type SubjectInfo = {
+  name: string;
+  id: string;
+  desc: string | null;
+  image_url: string | null;
+};
+
+type GradeInfo = {
+  name: string;
+  desc: string | null;
+  id: string;
+  board: string;
+}
+
 export interface PlayerProfileData {
-  id?: string;
+  id: string;
   name: string;
   password?: string;
-  email?: string;
-  grade: string;
+  email?: string | null;
+  grade: GradeInfo;
   curriculum: string;
-  subjects: string[];
+  subjects: SubjectInfo[];
   difficulty: string;
-  world_theme: string;
-  learning_goal: string;
-  avatar_index: number;
-  xp?: number;
-  level?: number;
-  coins?: number;
-  gems?: number;
-  energy?: number;
-  streak_days?: number;
-  last_active?: string;
-  created_at?: string;
-  updated_at?: string;
+  avatar_id: string;
+  xp: number;
+  level: number;
+  coins: number;
+  gems: number;
+  energy: number;
+  streak_days: number;
+  last_active: Date;
 }
 
 export interface MCQuestion {

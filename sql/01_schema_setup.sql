@@ -23,7 +23,7 @@ EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
 -- 2. Classes Table
-CREATE TABLE IF NOT EXISTS classes (
+CREATE TABLE IF NOT EXISTS class (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     name text NOT NULL
 );
@@ -41,7 +41,7 @@ ALTER TABLE subject ADD COLUMN IF NOT EXISTS board board DEFAULT 'CBSE';
 ALTER TABLE subject ADD COLUMN IF NOT EXISTS description text;
 
 -- 4. Topics Table
-CREATE TABLE IF NOT EXISTS topics (
+CREATE TABLE IF NOT EXISTS topic (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     subject_id uuid REFERENCES subject(id) ON DELETE CASCADE,
     name text NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS topics (
 );
 
 -- 5. Subtopics Table
-CREATE TABLE IF NOT EXISTS subtopics (
+CREATE TABLE IF NOT EXISTS subtopic (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     topic_id uuid REFERENCES topics(id) ON DELETE CASCADE,
     image_urls text[],
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS question (
 );
 
 -- 7. Options Table
-CREATE TABLE IF NOT EXISTS options (
+CREATE TABLE IF NOT EXISTS option (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     question_id uuid REFERENCES question(id) ON DELETE CASCADE,
     answer text NOT NULL,

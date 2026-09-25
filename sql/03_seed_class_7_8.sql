@@ -37,7 +37,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 7 & 8)
 -- ----------------------------------------------------------------------------
-INSERT INTO topics (id, subject_id, name, description, difficulty) VALUES
+INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   -- Class 7 Maths
   ('b0000007-0001-0000-0000-000000000017', 'a0000007-0001-0000-0000-000000000009', 'Rational Numbers & Exponents', 'Properties of rational numbers, laws of indices', 'Medium'),
   ('b0000007-0001-0000-0000-000000000018', 'a0000007-0001-0000-0000-000000000009', 'Triangles & Algebraic Expressions', 'Pythagoras theorem, exterior angles, algebraic terms', 'Hard'),
@@ -68,7 +68,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 7 & 8)
 -- ----------------------------------------------------------------------------
-INSERT INTO subtopics (id, topic_id, name, description, difficulty) VALUES
+INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000007-0001-0000-0000-000000000033', 'b0000007-0001-0000-0000-000000000017', 'Rational Number Arithmetic', 'Standard form, addition, multiplication of rationals', 'Medium'),
   ('c0000007-0001-0000-0000-000000000034', 'b0000007-0001-0000-0000-000000000017', 'Laws of Exponents', 'Power of a product, zero exponent, negative powers', 'Easy'),
   ('c0000007-0001-0000-0000-000000000035', 'b0000007-0001-0000-0000-000000000018', 'Properties of Triangles', 'Angle sum property, exterior angle theorem, Pythagoras', 'Medium'),

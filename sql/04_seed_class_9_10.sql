@@ -37,7 +37,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 9 & 10)
 -- ----------------------------------------------------------------------------
-INSERT INTO topics (id, subject_id, name, description, difficulty) VALUES
+INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   ('b0000009-0001-0000-0000-000000000033', 'a0000009-0001-0000-0000-000000000017', 'Number Systems & Polynomials', 'Irrational numbers, real numbers, remainder theorem, factor theorem', 'Medium'),
   ('b0000009-0001-0000-0000-000000000034', 'a0000009-0001-0000-0000-000000000017', 'Coordinate Geometry & Triangles', 'Cartesian plane, congruency criteria (SAS, ASA, SSS, RHS)', 'Hard'),
   ('b0000009-0002-0000-0000-000000000035', 'a0000009-0002-0000-0000-000000000018', 'Matter, Atoms & Molecules', 'States of matter, Dalton atomic theory, mole concept, valency', 'Medium'),
@@ -60,7 +60,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 9 & 10)
 -- ----------------------------------------------------------------------------
-INSERT INTO subtopics (id, topic_id, name, description, difficulty) VALUES
+INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000009-0001-0000-0000-000000000065', 'b0000009-0001-0000-0000-000000000033', 'Irrational Numbers & Real Lines', 'Proving irrationality, rationalizing denominators', 'Medium'),
   ('c0000009-0001-0000-0000-000000000066', 'b0000009-0001-0000-0000-000000000033', 'Factorization of Polynomials', 'Splitting middle term, algebraic identities', 'Hard'),
   ('c0000009-0001-0000-0000-000000000067', 'b0000009-0001-0000-0000-000000000034', 'Cartesian Coordinates & Quadrants', 'Abscissa, ordinate, plotting points on plane', 'Easy'),
@@ -272,7 +272,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 261 - 360
 -- ----------------------------------------------------------------------------
-INSERT INTO options (question_id, answer, is_correct) VALUES
+INSERT INTO option (question_id, answer, is_correct) VALUES
   -- Q261
   ('d0000000-0000-0000-0000-000000000261', '22,338', true),
   ('d0000000-0000-0000-0000-000000000261', '18,520', false),

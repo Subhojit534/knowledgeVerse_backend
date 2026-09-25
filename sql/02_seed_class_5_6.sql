@@ -203,8 +203,8 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
 
   ('d0000000-0000-0000-0000-000000000081', 'Convert to Passive Voice: "The mechanic repaired the motorcycle."', 'c0000006-0004-0000-0000-000000000031', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000082', 'Convert to Passive Voice: "The teacher praised the students."', 'c0000006-0004-0000-0000-000000000031', 'Medium', 'SAQ'),
-  ('d0000000-0000-0000-0000-000000000083', 'Change to indirect speech: "Ravi said, \'I am writing a story.\'"', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'MCQ'),
-  ('d0000000-0000-0000-0000-000000000084', 'Change to indirect speech: "She said, \'I like mathematics.\'"', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'SAQ'),
+  ('d0000000-0000-0000-0000-000000000083', 'Change to indirect speech: "Ravi said, ''I am writing a story.''"', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'MCQ'),
+  ('d0000000-0000-0000-0000-000000000084', 'Change to indirect speech: "She said, ''I like mathematics.''"', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000085', 'What is the sum of -30 and -45?', 'c0000006-0001-0000-0000-000000000017', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000086', 'Which integer is neither positive nor negative?', 'c0000006-0001-0000-0000-000000000018', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000087', 'Evaluate 4a - 3b when a = 5 and b = 2.', 'c0000006-0001-0000-0000-000000000019', 'Medium', 'MCQ'),

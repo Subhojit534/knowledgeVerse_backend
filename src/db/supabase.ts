@@ -18,6 +18,12 @@ import {
   MCQuestion,
 } from '../types/index.js';
 import { getQuestionsForBuilding } from '../data/questionsData.js';
+import { drizzleClient } from './drizzle_client.js';
+import { eq } from 'drizzle-orm';
+import { user } from '../data/model/user.js';
+import { comparePassword } from '../shared/components/bcrypt_password_service.js';
+import { classTable } from '../data/model/class.js';
+import { subject } from '../data/model/subject.js';
 
 
 
@@ -361,72 +367,99 @@ memoryGuildMessages.set(g1Uuid, [
 // ============================================================================
 
 export async function isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
-  const cleanName = username.trim().toLowerCase();
-
-  for (const [id, p] of memoryProfiles.entries()) {
-    if (id !== excludeUserId && p.name.trim().toLowerCase() === cleanName) {
+  try {
+    const cleanName = username.trim().toLowerCase();
+    const us = await drizzleClient.query.user.findFirst({ where: eq(user.username, cleanName) })
+    if (us) {
       return true;
     }
-  }
 
-  if (supabaseClient) {
-    try {
-      let query = supabaseClient.from('profiles').select('id, name').ilike('name', cleanName);
-      if (excludeUserId) {
-        query = query.neq('id', ensureUuid(excludeUserId));
-      }
-      const { data, error } = await query;
-      if (!error && data && data.length > 0) {
-        return true;
-      }
-    } catch (err) {
-      console.error('❌ [Supabase Check Error]: Username check failed:', err);
-    }
+    return false;
+  } catch (e) {
+    return Promise.reject("Something went wrong, please try again")
   }
-
-  return false;
 }
 
-export async function authenticateUser(name: string, password: string): Promise<PlayerProfileData | null> {
-  const cleanName = name.trim();
+export async function authenticateUser(username: string, password: string, { email }: { email?: string }): Promise<PlayerProfileData | null> {
+  username = username.trim();
+  email = (email ?? '').trim()
+  var provider = "MANUAL"
+  const [us] = await drizzleClient.select().from(user).leftJoin(classTable, eq(user.class_id, classTable.id)).limit(1)
+  if (!us || !us.user || !us.class) {
+    return Promise.reject("Unable to find the specific user or class")
+  }
+  const subjects = await drizzleClient.query.subject.findMany({ where: eq(subject.class_id, us.user.class_id) })
 
-  if (supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .ilike('name', cleanName)
-        .eq('password', password)
-        .maybeSingle();
+  const userNewStreakDays = checkConcurrentDayLogin(us.user.last_loggedin) ? us.user.streak_days + 1 : us.user.streak_days;
 
-      if (!error && data) {
-        const { data: subData } = await supabaseClient
-          .from('user_subjects')
-          .select('subject_name')
-          .eq('user_id', data.id);
-
-        const subjects = subData ? subData.map((s: any) => s.subject_name) : [];
-        const fullProfile: PlayerProfileData = {
-          ...data,
-          password,
-          subjects,
-        };
-        memoryProfiles.set(data.id, fullProfile);
-        return fullProfile;
-      }
-    } catch (e) {
-      console.error('❌ [Supabase Auth Error]:', e);
+  if (email || !us.user.password) {
+    provider = "GOOGLE"
+    await drizzleClient.update(user).set({ last_loggedin: new Date(), streak_days: userNewStreakDays })
+    return {
+      name: us.user.name,
+      level: us.user.level,
+      avatar_id: us.user.avatar_id,
+      difficulty: us.user.difficulty,
+      coins: us.user.coins,
+      subjects: subjects.map((subject) => {
+        return { id: subject.id, name: subject.name, desc: subject.description ?? null, image_url: subject.image_url ?? null }
+      }),
+      curriculum: us.class.board,
+      id: us.user.id,
+      grade: { board: us.class.board, desc: us.class.description, id: us.class.id, name: us.class.name },
+      xp: us.user.xp,
+      email: us.user.email,
+      energy: us.user.energy,
+      gems: us.user.gems,
+      last_active: new Date(),
+      streak_days: userNewStreakDays,
     }
   }
 
-  for (const p of memoryProfiles.values()) {
-    if (p.name.trim().toLowerCase() === cleanName.toLowerCase() && p.password === password) {
-      return p;
-    }
+  if (!(await comparePassword(password, us.user.password))) {
+    return Promise.reject("Password is incorrect")
+  }
+  await drizzleClient.update(user).set({ last_loggedin: new Date(), streak_days: userNewStreakDays })
+  return {
+    name: us.user.name,
+    level: us.user.level,
+    avatar_id: us.user.avatar_id,
+    difficulty: us.user.difficulty,
+    coins: us.user.coins,
+    subjects: subjects.map((subject) => {
+      return { id: subject.id, name: subject.name, desc: subject.description ?? null, image_url: subject.image_url ?? null }
+    }),
+    curriculum: us.class.board,
+    id: us.user.id,
+    grade: { board: us.class.board, desc: us.class.description, id: us.class.id, name: us.class.name },
+    xp: us.user.xp,
+    email: us.user.email,
+    energy: us.user.energy,
+    gems: us.user.gems,
+    last_active: new Date(),
+    streak_days: userNewStreakDays,
   }
 
-  return null;
 }
+
+
+const TotalDayInMs = 25 * 60 * 60 * 1000
+
+function checkConcurrentDayLogin(lastLogin: Date): boolean {
+  const _now = new Date()
+  const nowDay = new Date(_now.getFullYear(), _now.getMonth(), _now.getDay())
+  const anotherDay = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate())
+
+  const daysOccured = (nowDay.getTime() - anotherDay.getTime()) / TotalDayInMs;
+  if (daysOccured === 1) {
+    return true
+  } else if (daysOccured < 1) {
+    return false;
+  } else {
+    return false;
+  }
+}
+
 
 export async function saveProfile(profile: PlayerProfileData): Promise<PlayerProfileData> {
   let validProfileId: string;
@@ -452,7 +485,7 @@ export async function saveProfile(profile: PlayerProfileData): Promise<PlayerPro
         if (data && data.id) {
           foundId = data.id;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     validProfileId = foundId || crypto.randomUUID();
@@ -488,7 +521,7 @@ export async function saveProfile(profile: PlayerProfileData): Promise<PlayerPro
           difficulty: updated.difficulty,
           world_theme: updated.world_theme,
           learning_goal: updated.learning_goal,
-          avatar_index: updated.avatar_index,
+          avatar_index: updated.avatar_id,
           xp: updated.xp,
           level: updated.level,
           coins: updated.coins,
@@ -505,7 +538,7 @@ export async function saveProfile(profile: PlayerProfileData): Promise<PlayerPro
         console.error('❌ [Supabase Upsert Profile Error]:', error);
       } else if (data) {
         console.log(`✅ [Supabase Cloud]: Successfully saved profile "${updated.name}" (${validProfileId})`);
-        
+
         if (updated.subjects && updated.subjects.length > 0) {
           try {
             await supabaseClient.from('user_subjects').delete().eq('user_id', validProfileId);
@@ -586,7 +619,7 @@ export async function getProfile(userId?: string): Promise<PlayerProfileData> {
     difficulty: 'Balanced',
     world_theme: 'Green Highlands',
     learning_goal: 'Master all academic domains',
-    avatar_index: 0,
+    avatar_id: 0,
     xp: 0,
     level: 1,
     coins: 500,
@@ -932,7 +965,7 @@ export async function getUserGuild(userId: string): Promise<{
                 },
                 { onConflict: 'guild_id,user_id' }
               );
-            } catch (_) {}
+            } catch (_) { }
             break;
           }
         }
@@ -1277,7 +1310,7 @@ export async function getGuildMessages(guildId: string): Promise<GuildMessageDat
       if (msgList && msgList.length > 0) {
         return msgList as GuildMessageData[];
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return memoryGuildMessages.get(guildId) || [];
 }
@@ -1408,7 +1441,7 @@ export async function getFriendsData(userId: string): Promise<{
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Check in-memory store
@@ -1537,7 +1570,7 @@ export async function getUserPvPStats(userId: string): Promise<PvPStats> {
         memoryPvPStats.set(validId, stats);
         return stats;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // Default initial PvP stats
@@ -1665,7 +1698,7 @@ export async function matchmakePvP(
       title: profile.learning_goal || 'Academy Duelist',
       avatar_initial: effectiveName.charAt(0).toUpperCase(),
       avatar_color: '#F2CA50',
-      avatar_index: profile.avatar_index || 0,
+      avatar_index: profile.avatar_id || 0,
       level: profile.level || 1,
       rating: userStats.rating,
       tier: userStats.tier,
@@ -1736,7 +1769,7 @@ export async function matchmakePvP(
       title: queuedOpponent.profile.learning_goal || 'Academy Duelist',
       avatar_initial: opponentName.charAt(0).toUpperCase(),
       avatar_color: '#DEB7FF',
-      avatar_index: queuedOpponent.profile.avatar_index || 0,
+      avatar_index: queuedOpponent.profile.avatar_id || 0,
       level: queuedOpponent.profile.level || 1,
       rating: opponentStats.rating,
       tier: opponentStats.tier,
@@ -1754,7 +1787,7 @@ export async function matchmakePvP(
       title: profile.learning_goal || 'Master Scholar',
       avatar_initial: effectiveName.charAt(0).toUpperCase(),
       avatar_color: '#F2CA50',
-      avatar_index: profile.avatar_index || 0,
+      avatar_index: profile.avatar_id || 0,
       level: profile.level || 1,
       rating: userStats.rating,
       tier: userStats.tier,
@@ -2121,7 +2154,7 @@ export async function getPendingPvPChallenges(userId: string): Promise<{ receive
           memoryDuels.set(row.id, row as DuelChallengeData);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const received: any[] = [];
@@ -2214,7 +2247,7 @@ export async function respondToPvPChallenge(
         duel = data as DuelChallengeData;
         memoryDuels.set(challengeId, duel);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Fuzzy search in memory
@@ -2246,7 +2279,7 @@ export async function respondToPvPChallenge(
     if (supabaseClient) {
       try {
         await supabaseClient.from('duels').update({ status: 'declined' }).eq('id', duel.id);
-      } catch (_) {}
+      } catch (_) { }
     }
     return { success: true };
   }
@@ -2269,7 +2302,7 @@ export async function respondToPvPChallenge(
     title: challenger.learning_goal || 'Challenger Scholar',
     avatar_initial: effChallengerName ? effChallengerName.charAt(0).toUpperCase() : 'C',
     avatar_color: '#60A5FA',
-    avatar_index: challenger.avatar_index || 0,
+    avatar_index: challenger.avatar_id || 0,
     level: challenger.level || 1,
     rating: cStats.rating,
     tier: cStats.tier,
@@ -2287,7 +2320,7 @@ export async function respondToPvPChallenge(
     title: challenged.learning_goal || 'Defender Scholar',
     avatar_initial: effChallengedName ? effChallengedName.charAt(0).toUpperCase() : 'D',
     avatar_color: '#F2CA50',
-    avatar_index: challenged.avatar_index || 0,
+    avatar_index: challenged.avatar_id || 0,
     level: challenged.level || 1,
     rating: tStats.rating,
     tier: tStats.tier,
@@ -2337,7 +2370,7 @@ export async function respondToPvPChallenge(
         status: 'active',
         session_id: sessionId,
       }).eq('id', duel.id);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   console.log(`⚔️ [PvP Challenge Accepted]: Created Live Duel Match (${p1.name} vs ${p2.name}) in session ${sessionId}`);
@@ -2352,7 +2385,7 @@ export async function consumePvPChallenge(challengeId: string, sessionId?: strin
   if (supabaseClient) {
     try {
       await supabaseClient.from('duels').update({ status: 'completed' }).eq('id', challengeId);
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 
@@ -2483,7 +2516,7 @@ export async function joinPvPRoom(params: {
     title: guestProfile.learning_goal || 'Duelist Scholar',
     avatar_initial: guestName.charAt(0).toUpperCase(),
     avatar_color: '#60A5FA',
-    avatar_index: guestProfile.avatar_index || 0,
+    avatar_index: guestProfile.avatar_id || 0,
     level: guestProfile.level || 1,
     rating: guestStats.rating,
     tier: guestStats.tier,

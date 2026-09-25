@@ -39,7 +39,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 11 & 12)
 -- ----------------------------------------------------------------------------
-INSERT INTO topics (id, subject_id, name, description, difficulty) VALUES
+INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   -- Class 11 Topics
   ('b0000011-0001-0000-0000-000000000049', 'a0000011-0001-0000-0000-000000000025', 'Mechanics & Thermodynamics', 'Vectors, projectile motion, Newton laws, First & Second law of thermodynamics', 'Hard'),
   ('b0000011-0002-0000-0000-000000000050', 'a0000011-0002-0000-0000-000000000026', 'Chemical Bonding & Equilibrium', 'Hybridization, molecular orbital theory, Le Chatelier principle, pH buffer', 'Hard'),
@@ -58,7 +58,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 11 & 12)
 -- ----------------------------------------------------------------------------
-INSERT INTO subtopics (id, topic_id, name, description, difficulty) VALUES
+INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000011-0001-0000-0000-000000000097', 'b0000011-0001-0000-0000-000000000049', 'Projectile Motion & Work-Energy', 'Range, maximum height, work-energy theorem', 'Hard'),
   ('c0000011-0001-0000-0000-000000000098', 'b0000011-0001-0000-0000-000000000049', 'Laws of Thermodynamics & Heat Engines', 'Carnot cycle, efficiency, entropy change', 'Hard'),
   ('c0000011-0002-0000-0000-000000000099', 'b0000011-0002-0000-0000-000000000050', 'Hybridization & Molecular Geometry', 'sp, sp2, sp3 hybridization, VSEPR shapes', 'Medium'),
@@ -249,7 +249,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 361 - 500
 -- ----------------------------------------------------------------------------
-INSERT INTO options (question_id, answer, is_correct) VALUES
+INSERT INTO option (question_id, answer, is_correct) VALUES
   -- Q361
   ('d0000000-0000-0000-0000-000000000361', '45 degrees', true),
   ('d0000000-0000-0000-0000-000000000361', '90 degrees', false),

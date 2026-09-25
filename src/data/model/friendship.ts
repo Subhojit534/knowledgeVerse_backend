@@ -1,4 +1,4 @@
-import { date, pgEnum, pgTable, uuid, uniqueIndex, check, index } from "drizzle-orm/pg-core";
+import { date, pgEnum, pgTable, uuid, uniqueIndex, check, index, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./user.js";
 import { eq, sql } from "drizzle-orm";
 
@@ -9,8 +9,8 @@ export const friendship = pgTable("friendship", {
     id: uuid().notNull().defaultRandom().primaryKey(),
     requester_id: uuid().notNull().references(() => user.id),
     addressee_id: uuid().notNull().references(() => user.id),
-    created_at: date().notNull().defaultNow(),
-    updated_at: date().notNull().defaultNow(),
+    created_at: timestamp({ withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    updated_at: timestamp({ withTimezone: true, mode: 'date' }).notNull().defaultNow().$onUpdate(() => new Date()),
     status: friendship_status().notNull().default("PENDING"),
 
 }, (table) => [
