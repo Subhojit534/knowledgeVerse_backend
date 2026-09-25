@@ -108,12 +108,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000001098', 'Provide a sophisticated lexical synonym for ''alacrity'' denoting cheerful promptness and readiness.', 'c0000009-0004-0000-0000-000000000080', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001099', 'What is an advanced academic synonym for ''tenacious'' signifying persistent resolve and unyielding endurance?', 'c0000009-0004-0000-0000-000000000080', 'Medium', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001100', 'Provide a formal literary synonym for ''eloquent'' describing articulate and persuasively expressive speech.', 'c0000009-0004-0000-0000-000000000080', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (1001 - 1100)
 -- ----------------------------------------------------------------------------
-INSERT INTO options (id, question_id, answer, is_correct) VALUES
+INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000004001', 'd0000000-0000-0000-0000-000000001001', 'The Third Estate', true),
   ('e0000000-0000-0000-0000-000000004002', 'd0000000-0000-0000-0000-000000001001', 'The First Estate (Clergy)', false),
   ('e0000000-0000-0000-0000-000000004003', 'd0000000-0000-0000-0000-000000001001', 'The Second Estate (Nobility)', false),
@@ -439,4 +439,4 @@ INSERT INTO options (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000004323', 'd0000000-0000-0000-0000-000000001098', 'Eagerness (or promptitude / briskness)', true),
   ('e0000000-0000-0000-0000-000000004324', 'd0000000-0000-0000-0000-000000001099', 'Persistent (or resolute / pertinacious)', true),
   ('e0000000-0000-0000-0000-000000004325', 'd0000000-0000-0000-0000-000000001100', 'Articulate (or silver-tongued / expressive)', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

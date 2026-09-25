@@ -109,12 +109,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000001398', 'What is the worst-case time complexity of Python''s built-in sorting algorithm (Timsort)?', 'c0000011-0005-0000-0000-000000000105', 'Hard', 'MCQ'),
   ('d0000000-0000-0000-0000-000000001399', 'What is the auxiliary space complexity of standard in-place Bubble Sort?', 'c0000011-0005-0000-0000-000000000105', 'Hard', 'MCQ'),
   ('d0000000-0000-0000-0000-000000001400', 'What is the output of slicing lst = [10, 20, 30, 40, 50] with lst[1:4:2]?', 'c0000011-0005-0000-0000-000000000105', 'Medium', 'MCQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 1301 - 1400
 -- ----------------------------------------------------------------------------
-INSERT INTO options (id, question_id, answer, is_correct) VALUES
+INSERT INTO option (id, question_id, answer, is_correct) VALUES
   -- Q1301
   ('e0000000-0000-0000-0000-000000005201', 'd0000000-0000-0000-0000-000000001301', 'Vertically downward towards the center of Earth', true),
   ('e0000000-0000-0000-0000-000000005202', 'd0000000-0000-0000-0000-000000001301', 'Horizontally in the direction of motion', false),
@@ -540,4 +540,4 @@ INSERT INTO options (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000005523', 'd0000000-0000-0000-0000-000000001400', '[20, 30, 40]', false),
   ('e0000000-0000-0000-0000-000000005524', 'd0000000-0000-0000-0000-000000001400', '[10, 30, 50]', false),
   ('e0000000-0000-0000-0000-000000005525', 'd0000000-0000-0000-0000-000000001400', '[20, 50]', false)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

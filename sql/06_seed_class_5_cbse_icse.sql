@@ -107,7 +107,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000598', 'What is the antonym of the adjective ''artificial''?', 'c0000005-0004-0000-0000-000000000016', 'Hard', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000599', 'Give the common antonym of the word ''victory''.', 'c0000005-0004-0000-0000-000000000016', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000600', 'What is the antonym of the adjective ''candid'' (meaning straightforward and frank)?', 'c0000005-0004-0000-0000-000000000016', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 501 - 600
@@ -538,4 +538,4 @@ INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000002324', 'd0000000-0000-0000-0000-000000000599', 'Defeat', true),
   -- Q600 (SAQ)
   ('e0000000-0000-0000-0000-000000002325', 'd0000000-0000-0000-0000-000000000600', 'Deceitful (Secretive)', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

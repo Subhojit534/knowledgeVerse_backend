@@ -108,12 +108,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000001298', 'Which special character introduces a single-line comment in Python source code?', 'c0000010-0004-0000-0000-000000000096', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001299', 'Which built-in Python function captures a line of user input from the console as a string?', 'c0000010-0004-0000-0000-000000000096', 'Medium', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001300', 'Which keyword is paired with ''try'' in Python to intercept and handle runtime exceptions gracefully?', 'c0000010-0004-0000-0000-000000000096', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (1201 - 1300)
 -- ----------------------------------------------------------------------------
-INSERT INTO options (id, question_id, answer, is_correct) VALUES
+INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000004801', 'd0000000-0000-0000-0000-000000001201', '1915', true),
   ('e0000000-0000-0000-0000-000000004802', 'd0000000-0000-0000-0000-000000001201', '1917', false),
   ('e0000000-0000-0000-0000-000000004803', 'd0000000-0000-0000-0000-000000001201', '1919', false),
@@ -439,4 +439,4 @@ INSERT INTO options (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000005123', 'd0000000-0000-0000-0000-000000001298', '# (Hash)', true),
   ('e0000000-0000-0000-0000-000000005124', 'd0000000-0000-0000-0000-000000001299', 'input()', true),
   ('e0000000-0000-0000-0000-000000005125', 'd0000000-0000-0000-0000-000000001300', 'except', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

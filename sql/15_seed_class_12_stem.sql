@@ -109,12 +109,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000001498', 'What is the primary difference between the WHERE clause and the HAVING clause in SQL?', 'c0000012-0005-0000-0000-000000000116', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000001499', 'Which SQL aggregate function computes the arithmetic average of numeric values in a column, ignoring NULLs?', 'c0000012-0005-0000-0000-000000000116', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000001500', 'In SQL, what condition is evaluated by the predicate ''WHERE salary > ALL (SELECT salary FROM employees WHERE dept_id = 10)''?', 'c0000012-0005-0000-0000-000000000116', 'Hard', 'MCQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 1401 - 1500
 -- ----------------------------------------------------------------------------
-INSERT INTO options (id, question_id, answer, is_correct) VALUES
+INSERT INTO option (id, question_id, answer, is_correct) VALUES
   -- Q1401
   ('e0000000-0000-0000-0000-000000005601', 'd0000000-0000-0000-0000-000000001401', 'F = (1 / (4 * pi * epsilon_0)) * (|q1 * q2| / r^2)', true),
   ('e0000000-0000-0000-0000-000000005602', 'd0000000-0000-0000-0000-000000001401', 'F = (1 / (4 * pi * epsilon_0)) * (|q1 * q2| / r)', false),
@@ -540,4 +540,4 @@ INSERT INTO options (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000005923', 'd0000000-0000-0000-0000-000000001500', 'Salary is greater than the minimum salary in department 10', false),
   ('e0000000-0000-0000-0000-000000005924', 'd0000000-0000-0000-0000-000000001500', 'Salary is greater than the average salary of department 10', false),
   ('e0000000-0000-0000-0000-000000005925', 'd0000000-0000-0000-0000-000000001500', 'Salary matches all salaries present in department 10', false)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

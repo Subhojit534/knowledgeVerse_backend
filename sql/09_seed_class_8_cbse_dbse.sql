@@ -108,7 +108,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000898', 'Fill in the missing word in the idiom meaning to disclose a confidential secret: ''Spill the _____''.', 'c0000008-0004-0000-0000-000000000064', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000899', 'Choose the most accurate antonym for the vocabulary word ''Meticulous'':', 'c0000008-0004-0000-0000-000000000064', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000900', 'Complete the idiom meaning to face a grim or inevitable hardship with fortitude: ''Bite the _____''.', 'c0000008-0004-0000-0000-000000000064', 'Medium', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (801 - 900)
@@ -539,4 +539,4 @@ INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000003524', 'd0000000-0000-0000-0000-000000000899', 'Diligent', false),
   -- Q900 (SAQ)
   ('e0000000-0000-0000-0000-000000003525', 'd0000000-0000-0000-0000-000000000900', 'bullet', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

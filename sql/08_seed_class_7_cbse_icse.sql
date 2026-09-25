@@ -108,7 +108,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000798', 'Convert the imperative command into indirect speech: The military commander said to the soldiers, ''Halt!''', 'c0000007-0004-0000-0000-000000000048', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000799', 'Which reporting verb is most contextually appropriate when converting: The doctor said to the patient, ''Exercise daily and take your medicines''?', 'c0000007-0004-0000-0000-000000000048', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000800', 'Convert into indirect speech: Mother said to me, ''Please close the window before sleeping.''', 'c0000007-0004-0000-0000-000000000048', 'Medium', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (701 - 800)
@@ -539,4 +539,4 @@ INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000003124', 'd0000000-0000-0000-0000-000000000799', 'Threatened', false),
   -- Q800 (SAQ)
   ('e0000000-0000-0000-0000-000000003125', 'd0000000-0000-0000-0000-000000000800', 'Mother requested me to close the window before sleeping.', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

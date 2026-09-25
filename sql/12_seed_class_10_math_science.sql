@@ -108,12 +108,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000001198', 'What instrument is always connected in series in a circuit to measure the flowing electric current?', 'c0000010-0002-0000-0000-000000000088', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001199', 'State Joule''s law of heating relating heat generated H to current I, resistance R, and time t.', 'c0000010-0002-0000-0000-000000000088', 'Medium', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001200', 'Two electric bulbs rated 40 W and 60 W are connected in series across the mains. Which bulb glows brighter?', 'c0000010-0002-0000-0000-000000000088', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (1101 - 1200)
 -- ----------------------------------------------------------------------------
-INSERT INTO options (id, question_id, answer, is_correct) VALUES
+INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000004401', 'd0000000-0000-0000-0000-000000001101', '2^2 * 5 * 7', true),
   ('e0000000-0000-0000-0000-000000004402', 'd0000000-0000-0000-0000-000000001101', '2 * 5^2 * 7', false),
   ('e0000000-0000-0000-0000-000000004403', 'd0000000-0000-0000-0000-000000001101', '2^3 * 5 * 7', false),
@@ -439,4 +439,4 @@ INSERT INTO options (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000004723', 'd0000000-0000-0000-0000-000000001198', 'Ammeter', true),
   ('e0000000-0000-0000-0000-000000004724', 'd0000000-0000-0000-0000-000000001199', 'H = I^2 * R * t', true),
   ('e0000000-0000-0000-0000-000000004725', 'd0000000-0000-0000-0000-000000001200', 'The 40 W bulb', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

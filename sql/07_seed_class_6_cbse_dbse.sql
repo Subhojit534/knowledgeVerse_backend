@@ -107,7 +107,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000698', 'Transform the imperative sentence into Indirect Speech: The teacher said to the students, ''Revise your lessons diligently.''', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000699', 'In reported speech, what word does the temporal adverb ''now'' convert into upon backshifting?', 'c0000006-0004-0000-0000-000000000032', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000700', 'Convert the statement into Indirect Speech: Meera said, ''I am reading an historical adventure novel.''', 'c0000006-0004-0000-0000-000000000032', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 601 - 700
@@ -538,4 +538,4 @@ INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000002724', 'd0000000-0000-0000-0000-000000000699', 'then', true),
   -- Q700 (SAQ)
   ('e0000000-0000-0000-0000-000000002725', 'd0000000-0000-0000-0000-000000000700', 'Meera said that she was reading an historical adventure novel.', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

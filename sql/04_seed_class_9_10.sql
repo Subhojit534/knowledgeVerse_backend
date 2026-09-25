@@ -32,7 +32,7 @@ INSERT INTO subject (id, class_id, name, description) VALUES
   ('a0000010-0002-0000-0000-000000000022', '00000010-0002-0000-0000-000000000000', 'Science', 'Chemical reactions, life processes, light optics, electricity, magnetic effects'),
   ('a0000010-0003-0000-0000-000000000023', '00000010-0003-0000-0000-000000000000', 'Social Science', 'Nationalism in India, federalism, money and credit, resources development'),
   ('a0000010-0004-0000-0000-000000000024', '00000010-0005-0000-0000-000000000000', 'Computer Applications', 'Networking, cyber ethics, HTML/CSS web design, python scripting')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 9 & 10)
@@ -55,7 +55,7 @@ INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   ('b0000010-0003-0000-0000-000000000046', 'a0000010-0003-0000-0000-000000000023', 'Money, Credit & Globalization', 'Formal/informal loans, RBI role, MNCs and trade liberalization', 'Easy'),
   ('b0000010-0004-0000-0000-000000000047', 'a0000010-0004-0000-0000-000000000024', 'Computer Networking & Cyber Ethics', 'LAN/WAN, IP addresses, phishing, digital footprint, firewall', 'Medium'),
   ('b0000010-0004-0000-0000-000000000048', 'a0000010-0004-0000-0000-000000000024', 'HTML, CSS & Python Scripting', 'Semantic HTML, CSS selectors, loops, lists, and functions in Python', 'Medium')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 9 & 10)
@@ -101,7 +101,7 @@ INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000010-0004-0000-0000-000000000094', 'b0000010-0004-0000-0000-000000000047', 'Cyber Security & IT Act', 'Phishing, malware, SSL certificates, Indian IT Act 2000', 'Hard'),
   ('c0000010-0004-0000-0000-000000000095', 'b0000010-0004-0000-0000-000000000048', 'HTML5 Forms & CSS Styling', 'Form inputs, tables, CSS box model, external stylesheets', 'Medium'),
   ('c0000010-0004-0000-0000-000000000096', 'b0000010-0004-0000-0000-000000000048', 'Python Fundamentals', 'Conditional branching, for/while loops, lists, functions', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 221 - 290: CLASS 9)
@@ -184,7 +184,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000288', 'What is the official document containing voter names in a constituency called?', 'c0000009-0003-0000-0000-000000000076', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000289', 'If I _____ a bird, I would fly around the globe.', 'c0000009-0004-0000-0000-000000000077', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000290', 'Give the antonym of "gregarious".', 'c0000009-0004-0000-0000-000000000080', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 291 - 360: CLASS 10)
@@ -267,7 +267,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000358', 'In CSS, what is the space between the content boundary and its border called?', 'c0000010-0004-0000-0000-000000000095', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000359', 'What is the output of the Python expression: 17 // 3?', 'c0000010-0004-0000-0000-000000000096', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000360', 'Which Python built-in data type stores ordered, mutable elements in square brackets?', 'c0000010-0004-0000-0000-000000000096', 'Easy', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 261 - 360

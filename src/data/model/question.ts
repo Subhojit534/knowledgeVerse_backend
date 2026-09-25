@@ -13,5 +13,4 @@ export const question = pgTable("question", {
     question_type: question_type().notNull().default("MCQ"),
 }, (table) => [
     index("question_subtopic_id").on(table.subtopic_id),
-    uniqueIndex("question_subtopic_id_uq").on(table.question, table.subtopic_id)
 ])

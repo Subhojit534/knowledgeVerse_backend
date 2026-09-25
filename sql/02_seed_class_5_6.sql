@@ -32,7 +32,7 @@ INSERT INTO subject (id, class_id, name, description) VALUES
   ('a0000006-0002-0000-0000-000000000006', '00000006-0002-0000-0000-000000000000', 'Science', 'Food components, electricity, light & shadows, separation methods'),
   ('a0000006-0003-0000-0000-000000000007', '00000006-0005-0000-0000-000000000000', 'Social Science', 'Early civilizations, Earth domains, democracy, and equality'),
   ('a0000006-0004-0000-0000-000000000008', '00000006-0001-0000-0000-000000000000', 'English', 'Advanced parts of speech, voice, clauses, and vocabulary')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 5 & 6)
@@ -54,7 +54,7 @@ INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   ('b0000006-0003-0000-0000-000000000014', 'a0000006-0003-0000-0000-000000000007', 'Earth Domains & Diversity', 'Atmosphere, hydrosphere, government, and equality', 'Easy'),
   ('b0000006-0004-0000-0000-000000000015', 'a0000006-0004-0000-0000-000000000008', 'Sentence Structure & Conjunctions', 'Coordinating conjunctions, subordinate clauses, and idioms', 'Medium'),
   ('b0000006-0004-0000-0000-000000000016', 'a0000006-0004-0000-0000-000000000008', 'Voice & Direct Speech', 'Active to passive voice conversions, reporting verbs', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 5 & 6)
@@ -99,7 +99,7 @@ INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000006-0004-0000-0000-000000000030', 'b0000006-0004-0000-0000-000000000015', 'Complex Sentences & Clauses', 'Relative clauses (who, which, whose)', 'Medium'),
   ('c0000006-0004-0000-0000-000000000031', 'b0000006-0004-0000-0000-000000000016', 'Active & Passive Voice', 'Present, past, and modal auxiliary transformations', 'Medium'),
   ('c0000006-0004-0000-0000-000000000032', 'b0000006-0004-0000-0000-000000000016', 'Direct to Indirect Speech', 'Reporting statements, tense backshift basics', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 
 
@@ -162,7 +162,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty,question_type) VALUE
   ('d0000000-0000-0000-0000-000000000048', 'Who is known as the "Father of the Indian Constitution"?', 'c0000005-0003-0000-0000-000000000012', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000049', 'Identify the pronoun in: "He gave me a beautiful gift."', 'c0000005-0004-0000-0000-000000000013', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000050', 'Fill the blank: "Honesty is _____ best policy."', 'c0000005-0004-0000-0000-000000000014', 'Easy', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS 51 - 100 (CLASS 6)
@@ -222,7 +222,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000098', 'Choose the correct preposition: "The cat jumped _____ the fence."', 'c0000006-0004-0000-0000-000000000029', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000099', 'What is the passive form of: "The boy kicked the football"?', 'c0000006-0004-0000-0000-000000000031', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000100', 'Give the synonym of "courageous".', 'c0000006-0004-0000-0000-000000000032', 'Easy', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 1 - 100

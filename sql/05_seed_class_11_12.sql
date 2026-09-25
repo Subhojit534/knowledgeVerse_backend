@@ -34,7 +34,7 @@ INSERT INTO subject (id, class_id, name, description) VALUES
   ('a0000012-0003-0000-0000-000000000032', '00000012-0001-0000-0000-000000000000', 'Mathematics', 'Matrices, calculus, differential equations, vectors, 3D geometry, probability'),
   ('a0000012-0004-0000-0000-000000000033', '00000012-0003-0000-0000-000000000000', 'Biology', 'Genetics, molecular biology, biotechnology, human reproduction, ecology'),
   ('a0000012-0005-0000-0000-000000000034', '00000012-0005-0000-0000-000000000000', 'Computer Science', 'Data structures (stacks, queues), file handling, SQL database management')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 11 & 12)
@@ -53,7 +53,7 @@ INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   ('b0000012-0003-0000-0000-000000000056', 'a0000012-0003-0000-0000-000000000032', 'Advanced Calculus & Vectors', 'Definite integrals, differential equations, dot and cross products, Bayes theorem', 'Hard'),
   ('b0000012-0004-0000-0000-000000000057', 'a0000012-0004-0000-0000-000000000033', 'Genetics & Biotechnology', 'DNA replication, transcription, operon model, recombinant DNA, PCR', 'Hard'),
   ('b0000012-0005-0000-0000-000000000058', 'a0000012-0005-0000-0000-000000000034', 'Data Structures & SQL', 'Stack push/pop, queue enqueue/dequeue, relational SQL joins, aggregation', 'Medium')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 11 & 12)
@@ -80,7 +80,7 @@ INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000012-0004-0000-0000-000000000114', 'b0000012-0004-0000-0000-000000000057', 'Biotechnology Principles & Processes', 'Restriction endonucleases, plasmid vectors, PCR, agarose gel', 'Hard'),
   ('c0000012-0005-0000-0000-000000000115', 'b0000012-0005-0000-0000-000000000058', 'Linear Data Structures (Stack & Queue)', 'LIFO, FIFO, push, pop, enqueue, dequeue implementation', 'Medium'),
   ('c0000012-0005-0000-0000-000000000116', 'b0000012-0005-0000-0000-000000000058', 'Relational Database Queries & Joins', 'INNER JOIN, LEFT JOIN, GROUP BY, HAVING, subqueries', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 361 - 430: CLASS 11)
@@ -162,7 +162,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000428', 'What is the result of 1 << 3 in Python bitwise left shift?', 'c0000011-0005-0000-0000-000000000105', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000429', 'What is the SI unit of viscosity coefficient?', 'c0000011-0001-0000-0000-000000000097', 'Medium', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000430', 'What is the value of molar gas constant R in J/(mol K)?', 'c0000011-0001-0000-0000-000000000098', 'Easy', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 431 - 500: CLASS 12)
@@ -244,7 +244,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000498', 'What is the SI unit of capacitance?', 'c0000012-0001-0000-0000-000000000106', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000499', 'What is the energy of a photon of frequency nu according to Planck hypothesis?', 'c0000012-0001-0000-0000-000000000108', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000500', 'What is the value of P(A|B) according to Bayes Theorem?', 'c0000012-0003-0000-0000-000000000112', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 361 - 500

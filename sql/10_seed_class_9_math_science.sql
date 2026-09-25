@@ -108,7 +108,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000998', 'What is the magnitude of acceleration due to gravity g at the exact center of the Earth?', 'c0000009-0002-0000-0000-000000000072', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000999', 'What is the net upward force exerted by any displaced fluid upon a submerged body called?', 'c0000009-0002-0000-0000-000000000072', 'Medium', 'SAQ'),
   ('d0000000-0000-0000-0000-000000001000', 'State Archimedes'' Principle regarding a body immersed in a fluid.', 'c0000009-0002-0000-0000-000000000072', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS (901 - 1000)
@@ -439,4 +439,4 @@ INSERT INTO option (id, question_id, answer, is_correct) VALUES
   ('e0000000-0000-0000-0000-000000003923', 'd0000000-0000-0000-0000-000000000998', '0 m/s^2 (Zero)', true),
   ('e0000000-0000-0000-0000-000000003924', 'd0000000-0000-0000-0000-000000000999', 'Buoyant force (or Upthrust)', true),
   ('e0000000-0000-0000-0000-000000003925', 'd0000000-0000-0000-0000-000000001000', 'When a body is immersed fully or partially in a fluid, it experiences an upward buoyant force equal to the weight of the fluid displaced by it', true)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;

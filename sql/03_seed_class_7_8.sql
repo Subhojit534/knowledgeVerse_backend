@@ -32,7 +32,7 @@ INSERT INTO subject (id, class_id, name, description) VALUES
   ('a0000008-0002-0000-0000-000000000014', '00000008-0002-0000-0000-000000000000', 'Science', 'Crop production, microorganisms, force and pressure, sound, combustion'),
   ('a0000008-0003-0000-0000-000000000015', '00000008-0005-0000-0000-000000000000', 'Social Science', 'Indian Constitution, secularism, judiciary, resources and industries'),
   ('a0000008-0004-0000-0000-000000000016', '00000008-0001-0000-0000-000000000000', 'English', 'Clauses, subject-verb agreement, idioms, formal writing rules')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- TOPICS (CLASS 7 & 8)
@@ -63,7 +63,7 @@ INSERT INTO topic (id, subject_id, name, description, difficulty) VALUES
   -- Class 8 English
   ('b0000008-0004-0000-0000-000000000031', 'a0000008-0004-0000-0000-000000000016', 'Subject-Verb Concord & Clauses', 'Compound subjects, either/neither rules, noun clauses', 'Medium'),
   ('b0000008-0004-0000-0000-000000000032', 'a0000008-0004-0000-0000-000000000016', 'Phrasal Verbs & Vocabulary', 'Common idioms, phrasal combinations, context clues', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- SUBTOPICS (CLASS 7 & 8)
@@ -108,7 +108,7 @@ INSERT INTO subtopic (id, topic_id, name, description, difficulty) VALUES
   ('c0000008-0004-0000-0000-000000000062', 'b0000008-0004-0000-0000-000000000031', 'Noun and Adverbial Clauses', 'Identification and synthesis of complex clauses', 'Hard'),
   ('c0000008-0004-0000-0000-000000000063', 'b0000008-0004-0000-0000-000000000032', 'Common Phrasal Verbs', 'Look after, bring up, give in, put off usages', 'Medium'),
   ('c0000008-0004-0000-0000-000000000064', 'b0000008-0004-0000-0000-000000000032', 'Idiomatic Expressions', 'Contextual usage of literary and spoken idioms', 'Hard')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 101 - 160: CLASS 7)
@@ -179,7 +179,7 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000158', 'Simplify: (3^2)^3.', 'c0000007-0001-0000-0000-000000000034', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000159', 'In an isosceles right triangle, what are the two acute angles?', 'c0000007-0001-0000-0000-000000000035', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000160', 'If x = 1, y = -1, find the value of x^2 + y^2.', 'c0000007-0001-0000-0000-000000000036', 'Easy', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- QUESTIONS (QUESTIONS 161 - 220: CLASS 8)
@@ -250,12 +250,12 @@ INSERT INTO question (id, question, subtopic_id, difficulty, question_type) VALU
   ('d0000000-0000-0000-0000-000000000218', 'Fill in: "Each of the participants _____ received a certificate."', 'c0000008-0004-0000-0000-000000000061', 'Easy', 'MCQ'),
   ('d0000000-0000-0000-0000-000000000219', 'What does the phrasal verb "break down" mean regarding machines?', 'c0000008-0004-0000-0000-000000000063', 'Easy', 'SAQ'),
   ('d0000000-0000-0000-0000-000000000220', 'Explain idiom: "Bite the bullet".', 'c0000008-0004-0000-0000-000000000064', 'Hard', 'SAQ')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- OPTIONS FOR QUESTIONS 101 - 220
 -- ----------------------------------------------------------------------------
-INSERT INTO options (question_id, answer, is_correct) VALUES
+INSERT INTO option (question_id, answer, is_correct) VALUES
   -- Q101
   ('d0000000-0000-0000-0000-000000000101', '0', true),
   ('d0000000-0000-0000-0000-000000000101', '1', false),
