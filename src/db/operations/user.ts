@@ -35,8 +35,8 @@ export async function saveProfile(profile: any): Promise<any> {
     if (profile.password && !profile.password.startsWith('$2b$')) {
         profile.password = await bcrypt.hash(profile.password, 10);
     }
-    
-    const classId = profile.class_id || '00000000-0000-0000-0000-000000000000'; 
+
+    const classId = profile.class_id;
 
     if (profile.id) {
         const [updated] = await db.update(user).set({
@@ -90,9 +90,9 @@ export async function updateProgressAndStats(userId: string, buildingId: string,
     const newCoins = profile.coins + coinsEarned;
 
     const [updatedProfile] = await db.update(user)
-      .set({ xp: newXp, level: newLevel, coins: newCoins })
-      .where(eq(user.id, profile.id))
-      .returning();
+        .set({ xp: newXp, level: newLevel, coins: newCoins })
+        .where(eq(user.id, profile.id))
+        .returning();
 
     return { xpEarned, coinsEarned, newProfile: updatedProfile };
 }
