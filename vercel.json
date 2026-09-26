@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "api/index.js": {
-      "includeFiles": "node_modules/swagger-ui-dist/**"
+    "api/index.ts": {
+      "includeFiles": "swagger.json"
     }
   },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "api/index.js"
+      "destination": "/api/index"
     }
   ]
 }
