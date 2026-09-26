@@ -8,11 +8,42 @@ export const shopRouter = Router();
  * @swagger
  * /api/shop/items:
  *   get:
- *     summary: Endpoint for shop
+ *     summary: Get shop catalog items
  *     tags: [Shop]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Category of items to retrieve
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 category:
+ *                   type: string
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 shopRouter.get('/items', async (req: Request, res: Response) => {
   try {
@@ -35,16 +66,63 @@ shopRouter.get('/items', async (req: Request, res: Response) => {
  * @swagger
  * /api/shop/purchase:
  *   post:
- *     summary: Endpoint for shop
+ *     summary: Purchase a shop item
  *     tags: [Shop]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               itemId:
+ *                 type: string
+ *               shopItemId:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Successfully purchased item
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 purchasedItem:
+ *                   type: object
+ *                 newCoins:
+ *                   type: number
+ *                 newGems:
+ *                   type: number
+ *                 profile:
+ *                   type: object
+ *       400:
+ *         description: Bad request or purchase failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 shopRouter.post('/purchase', async (req: Request, res: Response) => {
   try {

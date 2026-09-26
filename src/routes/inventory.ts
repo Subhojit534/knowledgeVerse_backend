@@ -10,9 +10,35 @@ export const inventoryRouter = Router();
  *   get:
  *     summary: Endpoint for inventory
  *     tags: [Inventory]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: The user ID
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 inventory:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 equipped:
+ *                   type: object
+ *                 total_slots:
+ *                   type: integer
+ *                 used_slots:
+ *                   type: integer
+ *       500:
+ *         description: Failed to fetch player inventory
  */
 inventoryRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -47,13 +73,40 @@ inventoryRouter.get('/', async (req: Request, res: Response) => {
  *     summary: Endpoint for inventory
  *     tags: [Inventory]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               itemId:
+ *                 type: string
+ *             required:
+ *               - itemId
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 inventory:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: itemId is required to equip
+ *       404:
+ *         description: Item not found in inventory
+ *       500:
+ *         description: Failed to equip item
  */
 inventoryRouter.post('/equip', async (req: Request, res: Response) => {
   try {
@@ -90,13 +143,36 @@ inventoryRouter.post('/equip', async (req: Request, res: Response) => {
  *     summary: Endpoint for inventory
  *     tags: [Inventory]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               itemId:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 energy:
+ *                   type: number
+ *                 profile:
+ *                   type: object
+ *       404:
+ *         description: Item not found in backpack
+ *       500:
+ *         description: Failed to use item
  */
 inventoryRouter.post('/use', async (req: Request, res: Response) => {
   try {

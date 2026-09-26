@@ -9,16 +9,50 @@ export const learningRouter = Router();
  * @swagger
  * /api/learning/content:
  *   post:
- *     summary: Endpoint for learning
+ *     summary: Fetch Learning Content & Questions for a Building/Subject using Groq AI
  *     tags: [Learning]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               building_id:
+ *                 type: string
+ *               building_name:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               student_level:
+ *                 type: integer
+ *               topic:
+ *                 type: string
+ *               difficulty:
+ *                 type: string
+ *               grade:
+ *                 type: string
+ *               curriculum:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Successful response containing generated learning content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       500:
+ *         description: Failed to retrieve learning content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
  */
 learningRouter.post('/content', async (req: Request, res: Response) => {
   try {
@@ -49,16 +83,63 @@ learningRouter.post('/content', async (req: Request, res: Response) => {
  * @swagger
  * /api/learning/submit-quiz:
  *   post:
- *     summary: Endpoint for learning
+ *     summary: Submit Quiz Answers and Award XP & Coins
  *     tags: [Learning]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *               building_id:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               correct_answers:
+ *                 type: integer
+ *               total_questions:
+ *                 type: integer
+ *               difficulty:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 xp_earned:
+ *                   type: integer
+ *                 coins_earned:
+ *                   type: integer
+ *                 new_xp:
+ *                   type: integer
+ *                 new_level:
+ *                   type: integer
+ *                 new_coins:
+ *                   type: integer
+ *                 profile:
+ *                   type: object
+ *       500:
+ *         description: Failed to submit quiz results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
  */
 learningRouter.post('/submit-quiz', async (req: Request, res: Response) => {
   try {
@@ -93,16 +174,34 @@ learningRouter.post('/submit-quiz', async (req: Request, res: Response) => {
  * @swagger
  * /api/learning/tts:
  *   post:
- *     summary: Endpoint for learning
+ *     summary: TTS Endpoint for Question / Lesson Audio
  *     tags: [Learning]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               text:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 text:
+ *                   type: string
+ *                 audio_url:
+ *                   type: string
+ *                   nullable: true
+ *                 message:
+ *                   type: string
  */
 learningRouter.post('/tts', async (req: Request, res: Response) => {
   const { text } = req.body || {};

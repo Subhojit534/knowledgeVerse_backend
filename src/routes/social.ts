@@ -15,11 +15,65 @@ export const socialRouter = Router();
  * @swagger
  * /api/social/dashboard:
  *   get:
- *     summary: Endpoint for social
+ *     summary: Get social dashboard data
  *     tags: [Social]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: The ID of the user (defaults to demo-user-123)
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 friends:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pendingReceived:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pendingSent:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 availableExplorers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 myGuild:
+ *                   type: object
+ *                 guildMembers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 guildMessages:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 publicGuilds:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 socialRouter.get('/dashboard', async (req: Request, res: Response) => {
   try {
@@ -54,11 +108,51 @@ socialRouter.get('/dashboard', async (req: Request, res: Response) => {
  * @swagger
  * /api/social/friends:
  *   get:
- *     summary: Endpoint for social
+ *     summary: Get Friends, Pending Requests & Explorers List
  *     tags: [Social]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: The ID of the user (defaults to demo-user-123)
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 friends:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pendingReceived:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pendingSent:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 availableExplorers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 socialRouter.get('/friends', async (req: Request, res: Response) => {
   try {
@@ -83,16 +177,57 @@ socialRouter.get('/friends', async (req: Request, res: Response) => {
  * @swagger
  * /api/social/friends/request:
  *   post:
- *     summary: Endpoint for social
+ *     summary: Send Friend Request
  *     tags: [Social]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - addresseeId
+ *             properties:
+ *               requesterId:
+ *                 type: string
+ *               addresseeId:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 friendship:
+ *                   type: object
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 socialRouter.post('/friends/request', async (req: Request, res: Response) => {
   try {
@@ -121,16 +256,55 @@ socialRouter.post('/friends/request', async (req: Request, res: Response) => {
  * @swagger
  * /api/social/friends/respond:
  *   post:
- *     summary: Endpoint for social
+ *     summary: Respond to Friend Request (Accept / Reject)
  *     tags: [Social]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - friendshipId
+ *             properties:
+ *               friendshipId:
+ *                 type: string
+ *               accept:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 socialRouter.post('/friends/respond', async (req: Request, res: Response) => {
   try {
@@ -156,16 +330,64 @@ socialRouter.post('/friends/respond', async (req: Request, res: Response) => {
  * @swagger
  * /api/social/duel/challenge:
  *   post:
- *     summary: Endpoint for social
+ *     summary: Challenge Friend to a Quiz Duel
  *     tags: [Social]
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - challengedId
+ *               - buildingId
+ *             properties:
+ *               challengerId:
+ *                 type: string
+ *               challengedId:
+ *                 type: string
+ *               buildingId:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               stakeCoins:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 duel:
+ *                   type: object
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 socialRouter.post('/duel/challenge', async (req: Request, res: Response) => {
   try {

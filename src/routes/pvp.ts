@@ -59,16 +59,33 @@ async function getPvPQuestions(subject: string, grade: string = 'Class 10', curr
  * @swagger
  * /api/pvp/matchmake:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Matchmake PvP
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId: { type: string }
+ *               playerName: { type: string }
+ *               subject: { type: string }
+ *               stakeCoins: { type: number }
+ *               isRanked: { type: boolean }
+ *               grade: { type: string }
+ *               curriculum: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 matchedWithAI: { type: boolean }
+ *                 session: { type: object }
+ *                 waiting: { type: boolean }
  */
 pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
   try {
@@ -104,16 +121,24 @@ pvpRouter.post('/matchmake', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/matchmake/cancel:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Cancel matchmaking
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
  */
 pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
   try {
@@ -130,7 +155,7 @@ pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/session/{sessionId}:
  *   get:
- *     summary: Endpoint for pvp
+ *     summary: Get session state
  *     tags: [Pvp]
  *     parameters:
  *       - in: path
@@ -141,6 +166,13 @@ pvpRouter.post('/matchmake/cancel', async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 session: { type: object }
  */
 pvpRouter.get('/session/:sessionId', async (req: Request, res: Response) => {
   try {
@@ -163,7 +195,7 @@ pvpRouter.get('/session/:sessionId', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/session/{sessionId}/round:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Submit round answer
  *     tags: [Pvp]
  *     parameters:
  *       - in: path
@@ -176,9 +208,22 @@ pvpRouter.get('/session/:sessionId', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               user_id: { type: string }
+ *               round_index: { type: number }
+ *               selected_index: { type: number }
+ *               time_taken_ms: { type: number }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 session: { type: object }
+ *                 roundResult: { type: object }
  */
 pvpRouter.post('/session/:sessionId/round', async (req: Request, res: Response) => {
   try {
@@ -213,7 +258,7 @@ pvpRouter.post('/session/:sessionId/round', async (req: Request, res: Response) 
  * @swagger
  * /api/pvp/session/{sessionId}/finish:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Finish session
  *     tags: [Pvp]
  *     parameters:
  *       - in: path
@@ -221,14 +266,19 @@ pvpRouter.post('/session/:sessionId/round', async (req: Request, res: Response) 
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 session: { type: object }
+ *                 winnerId: { type: string }
+ *                 isDraw: { type: boolean }
+ *                 rewards: { type: object }
  */
 pvpRouter.post('/session/:sessionId/finish', async (req: Request, res: Response) => {
   try {
@@ -255,7 +305,7 @@ pvpRouter.post('/session/:sessionId/finish', async (req: Request, res: Response)
  * @swagger
  * /api/pvp/stats/{userId}:
  *   get:
- *     summary: Endpoint for pvp
+ *     summary: Get user stats
  *     tags: [Pvp]
  *     parameters:
  *       - in: path
@@ -266,6 +316,13 @@ pvpRouter.post('/session/:sessionId/finish', async (req: Request, res: Response)
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 stats: { type: object }
  */
 pvpRouter.get('/stats/:userId', async (req: Request, res: Response) => {
   try {
@@ -285,11 +342,18 @@ pvpRouter.get('/stats/:userId', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/leaderboard:
  *   get:
- *     summary: Endpoint for pvp
+ *     summary: Get leaderboard
  *     tags: [Pvp]
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 leaderboard: { type: array, items: { type: object } }
  */
 pvpRouter.get('/leaderboard', async (_req: Request, res: Response) => {
   try {
@@ -306,11 +370,25 @@ pvpRouter.get('/leaderboard', async (_req: Request, res: Response) => {
  * @swagger
  * /api/pvp/challenges:
  *   get:
- *     summary: Endpoint for pvp
+ *     summary: Get pending challenges
  *     tags: [Pvp]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: false
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 received: { type: array, items: { type: object } }
+ *                 sent: { type: array, items: { type: object } }
  */
 pvpRouter.get('/challenges', async (req: Request, res: Response) => {
   try {
@@ -333,16 +411,31 @@ pvpRouter.get('/challenges', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/challenge:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Send challenge
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               challengerId: { type: string }
+ *               challengedId: { type: string }
+ *               subject: { type: string }
+ *               stakeCoins: { type: number }
+ *               challengerName: { type: string }
+ *               challengedName: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *                 duel: { type: object }
  */
 pvpRouter.post('/challenge', async (req: Request, res: Response) => {
   try {
@@ -377,16 +470,30 @@ pvpRouter.post('/challenge', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/challenges/respond:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Respond to challenge
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               challengeId: { type: string }
+ *               accept: { type: boolean }
+ *               grade: { type: string }
+ *               curriculum: { type: string }
+ *               subject: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 session: { type: object }
+ *                 message: { type: string }
  */
 pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
   try {
@@ -418,16 +525,25 @@ pvpRouter.post('/challenges/respond', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/challenges/consume:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Consume challenge
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               challengeId: { type: string }
+ *               sessionId: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
  */
 pvpRouter.post('/challenges/consume', async (req: Request, res: Response) => {
   try {
@@ -447,16 +563,31 @@ pvpRouter.post('/challenges/consume', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/room/create:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Create room
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               userId: { type: string }
+ *               playerName: { type: string }
+ *               subject: { type: string }
+ *               stakeCoins: { type: number }
+ *               grade: { type: string }
+ *               curriculum: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 roomCode: { type: string }
+ *                 room: { type: object }
  */
 pvpRouter.post('/room/create', async (req: Request, res: Response) => {
   try {
@@ -489,16 +620,27 @@ pvpRouter.post('/room/create', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/room/join:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Join room
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               roomCode: { type: string }
+ *               userId: { type: string }
+ *               playerName: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 session: { type: object }
  */
 pvpRouter.post('/room/join', async (req: Request, res: Response) => {
   try {
@@ -532,7 +674,7 @@ pvpRouter.post('/room/join', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/room/status/{roomCode}:
  *   get:
- *     summary: Endpoint for pvp
+ *     summary: Get room status
  *     tags: [Pvp]
  *     parameters:
  *       - in: path
@@ -543,6 +685,10 @@ pvpRouter.post('/room/join', async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  */
 pvpRouter.get('/room/status/:roomCode', async (req: Request, res: Response) => {
   try {
@@ -560,16 +706,25 @@ pvpRouter.get('/room/status/:roomCode', async (req: Request, res: Response) => {
  * @swagger
  * /api/pvp/room/cancel:
  *   post:
- *     summary: Endpoint for pvp
+ *     summary: Cancel room
  *     tags: [Pvp]
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               roomCode: { type: string }
+ *               userId: { type: string }
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
  */
 pvpRouter.post('/room/cancel', async (req: Request, res: Response) => {
   try {

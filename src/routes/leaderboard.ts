@@ -127,9 +127,66 @@ async function buildLeaderboard(category: string = 'GLOBAL') {
  *   get:
  *     summary: Endpoint for leaderboard
  *     tags: [Leaderboard]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Category of the leaderboard (e.g., GLOBAL, GUILDS, MATH)
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 category:
+ *                   type: string
+ *                 leaderboard:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       rank:
+ *                         type: number
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       level:
+ *                         type: number
+ *                       score:
+ *                         type: number
+ *                       coins:
+ *                         type: number
+ *                       guildTag:
+ *                         type: string
+ *                       streakDays:
+ *                         type: number
+ *                       crownColor:
+ *                         type: string
+ *                       avatarInitial:
+ *                         type: string
+ *                       avatarColor:
+ *                         type: string
+ *                       domainMastery:
+ *                         type: string
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 leaderboardRouter.get('/', async (req: Request, res: Response) => {
   try {
@@ -163,6 +220,57 @@ leaderboardRouter.get('/', async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Successful response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 category:
+ *                   type: string
+ *                 leaderboard:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       rank:
+ *                         type: number
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       level:
+ *                         type: number
+ *                       score:
+ *                         type: number
+ *                       coins:
+ *                         type: number
+ *                       guildTag:
+ *                         type: string
+ *                       streakDays:
+ *                         type: number
+ *                       crownColor:
+ *                         type: string
+ *                       avatarInitial:
+ *                         type: string
+ *                       avatarColor:
+ *                         type: string
+ *                       domainMastery:
+ *                         type: string
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 error:
+ *                   type: string
  */
 leaderboardRouter.get('/category/:category', async (req: Request, res: Response) => {
   try {
