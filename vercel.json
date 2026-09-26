@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "/api-docs": {
+    "api/index.js": {
       "includeFiles": "node_modules/swagger-ui-dist/**"
-    },
-    "buildCommand": null,
-    "rewrites": [
-      {
-        "source": "/(.*)",
-        "destination": "/api"
-      }
-    ]
-  }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "api/index.js"
+    }
+  ]
+}
