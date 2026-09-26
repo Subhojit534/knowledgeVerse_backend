@@ -1,11 +1,12 @@
 import { db, computeLevel } from './shared.js';
 import { user } from '../../data/model/user.js';
 import { classTable } from '../../data/model/class.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 export async function isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
-    const existing = await db.select().from(user).where(eq(user.username, username)).limit(1);
+    const normalized = (username || '').toLowerCase().replace(/\s/g, '');
+    const existing = await db.select().from(user).where(or(eq(user.username, normalized), eq(user.username, username))).limit(1);
     if (existing.length > 0) {
         if (excludeUserId && existing[0].id === excludeUserId) return false;
         return true;
@@ -14,7 +15,10 @@ export async function isUsernameTaken(username: string, excludeUserId?: string):
 }
 
 export async function authenticateUser(username: string, password: string, { email }: { email?: string }): Promise<any | null> {
-    const [existing] = await db.select().from(user).where(eq(user.username, username)).limit(1);
+    const normalized = (username || '').toLowerCase().replace(/\s/g, '');
+    const [existing] = await db.select().from(user)
+        .where(or(eq(user.username, normalized), eq(user.username, username), eq(user.name, username)))
+        .limit(1);
     if (!existing || !existing.password) return null;
     const isValid = await bcrypt.compare(password, existing.password);
     if (!isValid) return null;

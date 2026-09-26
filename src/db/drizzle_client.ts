@@ -6,7 +6,7 @@ export const drizzleClient: NodePgDatabase<typeof schema> = drizzle({
         connectionString: encodeURI(process.env.POSTGRES_DB_URL!),
         max: 10,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 3000,
+        connectionTimeoutMillis: 15000,
     },
     schema: schema
 })

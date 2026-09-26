@@ -2,7 +2,7 @@ import { Groq } from 'groq-sdk';
 import { LearningContentPayload, LearningRequest, MCQuestion } from '../types/index.js';
 import { getQuestionsForBuilding } from '../data/questionsData.js';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
+const GROQ_API_KEY = process.env.GROQ_API_KEY!;
 
 let groqClient: any = null;
 
