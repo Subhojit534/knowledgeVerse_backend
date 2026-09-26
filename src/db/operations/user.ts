@@ -1,6 +1,7 @@
 import { db, computeLevel } from './shared.js';
 import { user } from '../../data/model/user.js';
-import { eq } from 'drizzle-orm';
+import { classTable } from '../../data/model/class.js';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 export async function isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
@@ -36,40 +37,72 @@ export async function saveProfile(profile: any): Promise<any> {
         profile.password = await bcrypt.hash(profile.password, 10);
     }
 
-    const classId = profile.class_id;
+    let classId = profile.class_id;
+    if (!classId) {
+        try {
+            const gradeName = profile.grade || 'Class 10';
+            const boardName = (profile.curriculum || 'CBSE').toUpperCase();
+            const found = await db.select().from(classTable)
+                .where(and(eq(classTable.name, gradeName), eq(classTable.board, boardName as any)))
+                .limit(1);
+            if (found.length > 0) {
+                classId = found[0].id;
+            } else {
+                const anyClass = await db.select().from(classTable).limit(1);
+                if (anyClass.length > 0) {
+                    classId = anyClass[0].id;
+                }
+            }
+        } catch (e) {
+            console.error('⚠️ [saveProfile]: Failed to resolve class_id fallback:', e);
+        }
+    }
 
-    if (profile.id) {
-        const [updated] = await db.update(user).set({
+    const username = (profile.name || '').toLowerCase().replace(/\s/g, '');
+    let targetUserId = profile.id;
+
+    if (!targetUserId && username) {
+        const [existing] = await db.select().from(user).where(eq(user.username, username)).limit(1);
+        if (existing) {
+            targetUserId = existing.id;
+            if (!classId) classId = existing.class_id;
+        }
+    }
+
+    if (targetUserId) {
+        const updateData: any = {
             name: profile.name,
-            username: profile.name.toLowerCase().replace(/\s/g, ''),
-            password: profile.password,
-            class_id: profile.class_id,
-            email: profile.email,
+            username: username,
             avatar_id: profile.avatar_id?.toString() || "1",
             difficulty: profile.difficulty || "Medium",
-            xp: profile.xp,
-            level: profile.level,
-            coins: profile.coins,
-            gems: profile.gems,
-            energy: profile.energy,
-            streak_days: profile.streak_days,
-        }).where(eq(user.id, profile.id)).returning();
+        };
+        if (profile.password) updateData.password = profile.password;
+        if (classId) updateData.class_id = classId;
+        if (profile.email) updateData.email = profile.email;
+        if (profile.xp !== undefined) updateData.xp = profile.xp;
+        if (profile.level !== undefined) updateData.level = profile.level;
+        if (profile.coins !== undefined) updateData.coins = profile.coins;
+        if (profile.gems !== undefined) updateData.gems = profile.gems;
+        if (profile.energy !== undefined) updateData.energy = profile.energy;
+        if (profile.streak_days !== undefined) updateData.streak_days = profile.streak_days;
+
+        const [updated] = await db.update(user).set(updateData).where(eq(user.id, targetUserId)).returning();
         return updated;
     } else {
         const [inserted] = await db.insert(user).values({
             name: profile.name,
-            username: profile.name.toLowerCase().replace(/\s/g, ''),
+            username: username,
             password: profile.password,
             class_id: classId,
             email: profile.email,
             avatar_id: profile.avatar_id?.toString() || "1",
             difficulty: profile.difficulty || "Medium",
-            xp: profile.xp,
-            level: profile.level,
-            coins: profile.coins,
-            gems: profile.gems,
-            energy: profile.energy,
-            streak_days: profile.streak_days,
+            xp: profile.xp ?? 150,
+            level: profile.level ?? 1,
+            coins: profile.coins ?? 500,
+            gems: profile.gems ?? 25,
+            energy: profile.energy ?? 100,
+            streak_days: profile.streak_days ?? 1,
         }).returning();
         return inserted;
     }

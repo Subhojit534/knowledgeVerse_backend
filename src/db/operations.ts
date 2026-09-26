@@ -5,3 +5,4 @@ export * from './operations/shop.js';
 export * from './operations/guild.js';
 export * from './operations/social.js';
 export * from './operations/pvp.js';
+export * from './operations/learning.js';

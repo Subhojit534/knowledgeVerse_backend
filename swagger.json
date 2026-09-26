@@ -1473,7 +1473,7 @@
     },
     "/api/learning/content": {
       "post": {
-        "summary": "Fetch Learning Content & Questions for a Building/Subject using Groq AI",
+        "summary": "Fetch Random Questions for a Subtopic or Topic",
         "tags": [
           "Learning"
         ],
@@ -1484,29 +1484,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "building_id": {
-                    "type": "string"
+                  "subtopic_id": {
+                    "type": "string",
+                    "example": "c0000009-0001-0000-0000-000000000065"
                   },
-                  "building_name": {
-                    "type": "string"
+                  "topic_id": {
+                    "type": "string",
+                    "example": "c0000001-0001-0000-0000-000000000000"
                   },
-                  "subject": {
-                    "type": "string"
-                  },
-                  "student_level": {
-                    "type": "integer"
-                  },
-                  "topic": {
-                    "type": "string"
-                  },
-                  "difficulty": {
-                    "type": "string"
-                  },
-                  "grade": {
-                    "type": "string"
-                  },
-                  "curriculum": {
-                    "type": "string"
+                  "limit": {
+                    "type": "integer",
+                    "example": 5
                   }
                 }
               }
@@ -1515,17 +1503,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response containing generated learning content",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to retrieve learning content",
+            "description": "Successful response containing random questions",
             "content": {
               "application/json": {
                 "schema": {
@@ -1533,15 +1511,70 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "example": false
+                      "example": true
                     },
-                    "error": {
-                      "type": "string"
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
                     }
                   }
                 }
               }
             }
+          },
+          "500": {
+            "description": "Failed to retrieve learning content"
+          }
+        }
+      }
+    },
+    "/api/learning/chat": {
+      "post": {
+        "summary": "Chat with AI Tutor using Groq",
+        "tags": [
+          "Learning"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Can you explain Newton's second law?"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI Tutor response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "response": {
+                      "type": "string",
+                      "example": "Newton's second law states that Force equals mass times acceleration (F=ma)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error"
           }
         }
       }
@@ -1584,66 +1617,17 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "xp_earned": {
-                      "type": "integer"
-                    },
-                    "coins_earned": {
-                      "type": "integer"
-                    },
-                    "new_xp": {
-                      "type": "integer"
-                    },
-                    "new_level": {
-                      "type": "integer"
-                    },
-                    "new_coins": {
-                      "type": "integer"
-                    },
-                    "profile": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Successful response"
           },
           "500": {
-            "description": "Failed to submit quiz results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": false
-                    },
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Failed to submit quiz results"
           }
         }
       }
     },
     "/api/learning/tts": {
       "post": {
-        "summary": "TTS Endpoint for Question / Lesson Audio",
+        "summary": "TTS Endpoint for Question / Lesson Audio using ElevenLabs",
         "tags": [
           "Learning"
         ],
@@ -1655,7 +1639,8 @@
                 "type": "object",
                 "properties": {
                   "text": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Welcome to KnowledgeVerse!"
                   }
                 }
               }
@@ -1664,29 +1649,18 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "Successful response containing raw audio stream",
             "content": {
-              "application/json": {
+              "audio/mpeg": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "text": {
-                      "type": "string"
-                    },
-                    "audio_url": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
+          },
+          "500": {
+            "description": "Error"
           }
         }
       }

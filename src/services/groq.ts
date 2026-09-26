@@ -192,12 +192,12 @@ Required JSON schema:
 
     // Valid high-performance Groq production models
     const modelsToTry = [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
+      'qwen/qwen3.8-27b',
+      'qwen/qwen3.8-27b',
     ];
 
     let responseText: string | null | undefined;
-    let selectedModel = 'llama-3.3-70b-versatile';
+    let selectedModel = 'qwen/qwen3.8-27b';
 
     for (const model of modelsToTry) {
       try {
