@@ -10,6 +10,7 @@ import { leaderboardRouter } from './routes/leaderboard.js';
 import { socialRouter } from './routes/social.js';
 import { guildsRouter } from './routes/guilds.js';
 import { pvpRouter } from './routes/pvp.js';
+import { classesRouter } from './routes/classes.js';
 import { setupSwagger } from './swagger.js';
 import morgan from "morgan"
 
@@ -55,6 +56,7 @@ app.use('/api/leaderboard', leaderboardRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/guilds', guildsRouter);
 app.use('/api/pvp', pvpRouter);
+app.use('/api/classes', classesRouter);
 
 
 // Global Error Handler
